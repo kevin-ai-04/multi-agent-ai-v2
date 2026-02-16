@@ -1,0 +1,8 @@
+langchain
+langchain-community
+langchain-ollama
+langgraph
+streamlit
+ollama
+playwright
+pytest
