@@ -1,19 +1,21 @@
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
-import { Bot, ChevronLeft, ChevronRight, Home, Settings as SettingsIcon } from "lucide-react"
+import { Bot, ChevronLeft, ChevronRight, Home, Settings as SettingsIcon, Mail } from "lucide-react"
+
+import { NavItem } from "./NavItem"
 
 interface SidebarProps {
     agentAEnabled: boolean;
     setAgentAEnabled: (enabled: boolean) => void;
     agentBEnabled: boolean;
     setAgentBEnabled: (enabled: boolean) => void;
-    activeView: "home" | "settings";
-    setActiveView: (view: "home" | "settings") => void;
+    activeView: "home" | "emails" | "settings";
+    setActiveView: (view: "home" | "emails" | "settings") => void;
     isCollapsed: boolean;
     setIsCollapsed: (collapsed: boolean) => void;
 }
@@ -31,87 +33,100 @@ export function Sidebar({
 
     const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
-    const NavItem = ({ view, icon: Icon, label }: { view: "home" | "settings", icon: any, label: string }) => (
-        <TooltipProvider delayDuration={0}>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button
-                        variant={activeView === view ? "secondary" : "ghost"}
-                        className={cn(
-                            "w-full justify-start h-12 mb-1",
-                            isCollapsed ? "justify-center px-2" : "px-4"
-                        )}
-                        onClick={() => setActiveView(view)}
-                    >
-                        <Icon className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
-                        {!isCollapsed && <span>{label}</span>}
-                    </Button>
-                </TooltipTrigger>
-                {isCollapsed && <TooltipContent side="right">{label}</TooltipContent>}
-            </Tooltip>
-        </TooltipProvider>
-    );
-
     return (
         <div className={cn(
-            "relative flex flex-col h-full bg-card border-r transition-all duration-300",
-            isCollapsed ? "w-16" : "w-64"
+            "relative flex flex-col h-full transition-all duration-300 z-20",
+            "bg-white/40 dark:bg-black/40 backdrop-blur-xl border-r border-white/20 dark:border-white/10",
+            isCollapsed ? "w-20" : "w-72"
         )}>
             {/* Toggle Button */}
             <Button
                 variant="ghost"
                 size="icon"
-                className="absolute -right-3 top-6 z-20 h-6 w-6 rounded-full border bg-background shadow-md hover:bg-accent"
+                className="absolute -right-3 top-8 z-30 h-6 w-6 rounded-full border border-white/20 bg-white/50 dark:bg-black/50 shadow-md backdrop-blur-sm hover:bg-primary hover:text-white transition-colors"
                 onClick={toggleCollapse}
             >
                 {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
             </Button>
 
             {/* Header / Logo */}
-            <div className={cn("flex items-center h-14 border-b px-4", isCollapsed ? "justify-center" : "")}>
-                <Bot className="h-6 w-6 text-primary" />
-                {!isCollapsed && <span className="ml-2 font-bold truncate">Agent System</span>}
+            <div className={cn("flex items-center h-20 px-6 mb-2", isCollapsed ? "justify-center" : "")}>
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <Bot className="h-6 w-6 text-white" />
+                </div>
+                {!isCollapsed && (
+                    <div className="ml-3 flex flex-col">
+                        <span className="font-bold text-lg leading-none tracking-tight">Agent<span className="text-primary">Sys</span></span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold mt-1">v2.0</span>
+                    </div>
+                )}
             </div>
 
             {/* Navigation */}
-            <ScrollArea className="flex-1 py-4">
-                <nav className="px-2 space-y-1">
-                    <NavItem view="home" icon={Home} label="Home" />
-                    <NavItem view="settings" icon={SettingsIcon} label="Settings" />
+            <ScrollArea className="flex-1 py-4 px-3">
+                <nav className="space-y-2">
+                    <NavItem
+                        view="home"
+                        icon={Home}
+                        label="Home"
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                        isCollapsed={isCollapsed}
+                    />
+                    <NavItem
+                        view="emails"
+                        icon={Mail}
+                        label="Emails"
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                        isCollapsed={isCollapsed}
+                    />
+                    <NavItem
+                        view="settings"
+                        icon={SettingsIcon}
+                        label="Settings"
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                        isCollapsed={isCollapsed}
+                    />
                 </nav>
             </ScrollArea>
 
             {/* Footer / Agent Controls */}
-            <div className="p-2 border-t mt-auto">
+            <div className="p-4 mt-auto">
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button variant="outline" className={cn("w-full", isCollapsed ? "px-0 justify-center" : "justify-between")}>
-                            {isCollapsed ? <Bot className="h-4 w-4" /> : (
+                        <Button
+                            variant="outline"
+                            className={cn(
+                                "w-full border-white/20 dark:border-white/10 bg-white/50 dark:bg-black/50 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300",
+                                isCollapsed ? "px-0 justify-center aspect-square" : "justify-between h-12"
+                            )}
+                        >
+                            {isCollapsed ? <Bot className="h-5 w-5" /> : (
                                 <>
-                                    <span className="flex items-center">
+                                    <span className="flex items-center font-medium">
                                         <Bot className="mr-2 h-4 w-4" />
-                                        Agent Controls
+                                        Agents
                                     </span>
                                     <ChevronRight className="h-4 w-4 opacity-50" />
                                 </>
                             )}
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent side="right" className="w-80 ml-2">
-                        <div className="grid gap-4">
-                            <div className="space-y-2">
-                                <h4 className="font-medium leading-none">Agent Configuration</h4>
-                                <p className="text-sm text-muted-foreground">Manage active agents.</p>
+                    <PopoverContent side="right" className="w-80 ml-4 glass border-white/20 p-0 overflow-hidden">
+                        <div className="p-4 bg-blue-500/10 border-b border-white/10">
+                            <h4 className="font-semibold leading-none">Agent Status</h4>
+                            <p className="text-xs text-muted-foreground mt-1">Active Neural Modules</p>
+                        </div>
+                        <div className="p-4 grid gap-4">
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="agent-a" className="font-medium">Num2Text</Label>
+                                <Switch id="agent-a" checked={agentAEnabled} onCheckedChange={setAgentAEnabled} />
                             </div>
-                            <div className="grid gap-2">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="agent-a">Num2Text Agent</Label>
-                                    <Switch id="agent-a" checked={agentAEnabled} onCheckedChange={setAgentAEnabled} />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="agent-b">Text2Num Agent</Label>
-                                    <Switch id="agent-b" checked={agentBEnabled} onCheckedChange={setAgentBEnabled} />
-                                </div>
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="agent-b" className="font-medium">Text2Num</Label>
+                                <Switch id="agent-b" checked={agentBEnabled} onCheckedChange={setAgentBEnabled} />
                             </div>
                         </div>
                     </PopoverContent>

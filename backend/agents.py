@@ -12,10 +12,7 @@ ORCHESTRATOR_MODEL = os.getenv("ORCHESTRATOR_MODEL", "mistral")
 NUM2TEXT_MODEL = os.getenv("NUM2TEXT_MODEL", "mistral")
 TEXT2NUM_MODEL = os.getenv("TEXT2NUM_MODEL", "mistral")
 
-print(f"🤖 Loading Agents:")
-print(f"   - Orchestrator: {ORCHESTRATOR_MODEL}")
-print(f"   - Num2Text: {NUM2TEXT_MODEL}")
-print(f"   - Text2Num: {TEXT2NUM_MODEL}")
+# Logging configuration could be set up here instead of usage of print requests.
 
 # Initialize separate LLM instances
 router_llm = ChatOllama(model=ORCHESTRATOR_MODEL, base_url=OLLAMA_BASE_URL)

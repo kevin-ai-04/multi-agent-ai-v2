@@ -6,89 +6,73 @@
 
     :root,
     .light {
-        /* Catppuccin Latte (Light) */
-        --background: 240 5% 96%;
-        /* Base */
-        --foreground: 240 4% 16%;
-        /* Text */
+        /* Electric Blue Theme (Light) */
+        --background: 220 100% 98%;
+        /* Very pale blue/white */
+        --foreground: 220 50% 10%;
 
         --card: 0 0% 100%;
-        --card-foreground: 240 4% 16%;
+        --card-foreground: 220 50% 10%;
 
         --popover: 0 0% 100%;
-        --popover-foreground: 240 4% 16%;
+        --popover-foreground: 220 50% 10%;
 
-        --primary: 266 85% 58%;
-        /* Mauve */
-        --primary-foreground: 360 100% 100%;
+        /* Electric Blue */
+        --primary: 220 90% 60%;
+        --primary-foreground: 0 0% 100%;
 
-        --secondary: 240 5% 84%;
-        /* Surface 2 */
-        --secondary-foreground: 240 4% 16%;
+        --secondary: 220 30% 90%;
+        --secondary-foreground: 220 50% 10%;
 
-        --muted: 240 5% 96%;
-        /* Surface 0 */
-        --muted-foreground: 240 4% 40%;
-        /* Subtext 0 */
+        --muted: 220 20% 94%;
+        --muted-foreground: 220 10% 40%;
 
-        --accent: 266 85% 58%;
-        /* Mauve */
-        --accent-foreground: 360 100% 100%;
+        --accent: 220 90% 60%;
+        --accent-foreground: 0 0% 100%;
 
-        --destructive: 347 87% 60%;
-        /* Red */
-        --destructive-foreground: 360 100% 100%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
 
-        --border: 240 6% 90%;
-        /* Overlay 0 */
-        --input: 240 6% 90%;
-        --ring: 266 85% 58%;
-        /* Mauve */
+        --border: 220 20% 90%;
+        --input: 220 20% 90%;
+        --ring: 220 90% 60%;
 
-        --radius: 0.5rem;
+        --radius: 1rem;
+        /* Softer, rounder corners */
     }
 
     .dark {
-        /* Catppuccin Mocha (Dark) */
-        --background: 240 21% 12%;
-        /* Base */
-        --foreground: 226 64% 88%;
-        /* Text */
+        /* Neon Cyber Blue Theme (Dark) */
+        --background: 220 50% 5%;
+        /* Deep blue black */
+        --foreground: 220 20% 95%;
 
-        --card: 240 21% 15%;
-        /* Surface 0 */
-        --card-foreground: 226 64% 88%;
+        --card: 220 40% 10%;
+        /* Darker slightly transparent logic handled in components */
+        --card-foreground: 220 20% 95%;
 
-        --popover: 240 21% 15%;
-        /* Surface 0 */
-        --popover-foreground: 226 64% 88%;
+        --popover: 220 40% 10%;
+        --popover-foreground: 220 20% 95%;
 
-        --primary: 267 84% 81%;
-        /* Mauve */
-        --primary-foreground: 240 21% 12%;
+        /* Glowing Blue */
+        --primary: 220 90% 60%;
+        --primary-foreground: 220 50% 5%;
 
-        --secondary: 240 19% 26%;
-        /* Surface 2 */
-        --secondary-foreground: 226 64% 88%;
+        --secondary: 220 30% 15%;
+        --secondary-foreground: 220 20% 95%;
 
-        --muted: 240 21% 15%;
-        /* Surface 0 */
-        --muted-foreground: 226 64% 70%;
-        /* Subtext 0 */
+        --muted: 220 30% 15%;
+        --muted-foreground: 220 10% 60%;
 
-        --accent: 267 84% 81%;
-        /* Mauve */
-        --accent-foreground: 240 21% 12%;
+        --accent: 220 90% 60%;
+        --accent-foreground: 220 50% 5%;
 
-        --destructive: 343 81% 75%;
-        /* Red */
-        --destructive-foreground: 240 21% 12%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
 
-        --border: 240 19% 26%;
-        /* Surface 2 */
-        --input: 240 19% 26%;
-        --ring: 267 84% 81%;
-        /* Mauve */
+        --border: 220 30% 20%;
+        --input: 220 30% 20%;
+        --ring: 220 90% 60%;
     }
 }
 
@@ -99,5 +83,28 @@
 
     body {
         @apply bg-background text-foreground;
+    }
+}
+
+@layer utilities {
+    .glass {
+        @apply bg-white/20 backdrop-blur-lg border border-white/20 shadow-lg;
+    }
+
+    .dark .glass {
+        @apply bg-black/20 border-white/10;
+    }
+
+    .neon-border {
+        @apply border border-primary/50 shadow-neon;
+    }
+
+    .dark .neon-border {
+        @apply shadow-neon-strong;
+    }
+
+    .mesh-gradient {
+        background-image: radial-gradient(ellipse at top left, var(--tw-gradient-stops));
+        @apply from-blue-100 via-cyan-50 to-white dark:from-blue-950 dark:via-slate-950 dark:to-cyan-950;
     }
 }

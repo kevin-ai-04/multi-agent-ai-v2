@@ -59,6 +59,10 @@ export default {
                 md: "calc(var(--radius) - 2px)",
                 sm: "calc(var(--radius) - 4px)",
             },
+            boxShadow: {
+                "neon": "0 0 10px rgba(37, 99, 235, 0.3)",
+                "neon-strong": "0 0 15px rgba(37, 99, 235, 0.5)",
+            },
             keyframes: {
                 "accordion-down": {
                     from: { height: "0" },
