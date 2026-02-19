@@ -72,7 +72,7 @@ export function ChatInterface({ agentAEnabled, agentBEnabled }: ChatInterfacePro
     };
 
     return (
-        <div className="flex flex-col h-full bg-slate-50">
+        <div className="flex flex-col h-full bg-background transition-colors duration-300">
             <ScrollArea className="flex-1 p-4">
                 <div className="max-w-3xl mx-auto space-y-6">
                     {messages.map((msg, index) => (
@@ -81,12 +81,12 @@ export function ChatInterface({ agentAEnabled, agentBEnabled }: ChatInterfacePro
                                 {msg.role === 'user' ? (
                                     <AvatarFallback className="bg-primary text-primary-foreground"><User className="w-4 h-4" /></AvatarFallback>
                                 ) : (
-                                    <AvatarFallback className="bg-emerald-600 text-white"><Bot className="w-4 h-4" /></AvatarFallback>
+                                    <AvatarFallback className="bg-accent text-accent-foreground"><Bot className="w-4 h-4" /></AvatarFallback>
                                 )}
                             </Avatar>
 
                             <div className={`space-y-2 max-w-[80%]`}>
-                                <Card className={`p-4 ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-white'}`}>
+                                <Card className={`p-4 ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card text-card-foreground'}`}>
                                     <p className="leading-relaxed">{msg.content}</p>
                                 </Card>
                                 {/* Show steps for assistant messages if available */}
@@ -115,7 +115,7 @@ export function ChatInterface({ agentAEnabled, agentBEnabled }: ChatInterfacePro
                 </div>
             </ScrollArea>
 
-            <div className="p-4 bg-white border-t">
+            <div className="p-4 bg-background border-t">
                 <form onSubmit={handleSubmit} className="flex gap-2 max-w-3xl mx-auto">
                     <Input
                         value={input}
