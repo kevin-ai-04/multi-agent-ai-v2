@@ -63,19 +63,18 @@ def service_unavailable_node(state: AgentState):
 # 3. Define Conditional Logic
 def route_decision(state: AgentState) -> Literal["agent_num2text", "agent_text2num", "unknown", "service_unavailable"]:
     decision = state["routing_decision"]
+    agent_enabled_map = {
+        "num2text": state.get("agent_a_enabled", True),
+        "text2num": state.get("agent_b_enabled", True)
+    }
+
+    if decision in ["num2text", "text2num"]:
+        if agent_enabled_map[decision]:
+            return f"agent_{decision}"
+        else:
+            return "service_unavailable"
     
-    if decision == "num2text":
-        if state.get("agent_a_enabled", True):
-            return "agent_num2text"
-        else:
-            return "service_unavailable"
-    elif decision == "text2num":
-        if state.get("agent_b_enabled", True):
-            return "agent_text2num"
-        else:
-            return "service_unavailable"
-    else:
-        return "unknown"
+    return "unknown"
 
 # 4. Build Graph
 workflow = StateGraph(AgentState)

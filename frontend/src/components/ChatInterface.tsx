@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User } from "lucide-react";
+import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
+import { MessageBubble } from "./MessageBubble";
 import { sendMessage } from "@/api/client";
 import { OrchestratorStatus } from "./OrchestratorStatus";
 
-interface Message {
+export interface Message {
     role: 'user' | 'assistant';
     content: string;
     steps?: string[];
@@ -17,12 +16,24 @@ interface Message {
 interface ChatInterfaceProps {
     agentAEnabled: boolean;
     agentBEnabled: boolean;
+    messages: Message[];
+    setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+    input: string;
+    setInput: (value: string) => void;
+    isLoading: boolean;
+    setIsLoading: (loading: boolean) => void;
 }
 
-export function ChatInterface({ agentAEnabled, agentBEnabled }: ChatInterfaceProps) {
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [input, setInput] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
+export function ChatInterface({
+    agentAEnabled,
+    agentBEnabled,
+    messages,
+    setMessages,
+    input,
+    setInput,
+    isLoading,
+    setIsLoading
+}: ChatInterfaceProps) {
     const [currentSteps, setCurrentSteps] = useState<string[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -58,10 +69,7 @@ export function ChatInterface({ agentAEnabled, agentBEnabled }: ChatInterfacePro
                 content: response.response_text,
                 steps: response.steps
             }]);
-            setCurrentSteps([]); // Clear real-time steps as they are now in history if needed, or we can keep them briefly? 
-            // Actually, let's keep the real-time steps empty and let the message history show steps if we want.
-            // But for better UX, we can just show the final result and maybe an expander for steps?
-            // For this implementation, I'll follow the Streamlit pattern: Show steps during processing.
+            setCurrentSteps([]);
 
         } catch (error) {
             setMessages(prev => [...prev, { role: 'assistant', content: "Error: Failed to process request." }]);
@@ -72,62 +80,49 @@ export function ChatInterface({ agentAEnabled, agentBEnabled }: ChatInterfacePro
     };
 
     return (
-        <div className="flex flex-col h-full bg-slate-50">
-            <ScrollArea className="flex-1 p-4">
-                <div className="max-w-3xl mx-auto space-y-6">
+        <div className="flex flex-col h-full bg-transparent">
+            {/* Messages Area */}
+            <ScrollArea className="flex-1 px-4 py-6">
+                <div className="max-w-4xl mx-auto space-y-8">
                     {messages.map((msg, index) => (
-                        <div key={index} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                            <Avatar className="w-8 h-8">
-                                {msg.role === 'user' ? (
-                                    <AvatarFallback className="bg-primary text-primary-foreground"><User className="w-4 h-4" /></AvatarFallback>
-                                ) : (
-                                    <AvatarFallback className="bg-emerald-600 text-white"><Bot className="w-4 h-4" /></AvatarFallback>
-                                )}
-                            </Avatar>
-
-                            <div className={`space-y-2 max-w-[80%]`}>
-                                <Card className={`p-4 ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-white'}`}>
-                                    <p className="leading-relaxed">{msg.content}</p>
-                                </Card>
-                                {/* Show steps for assistant messages if available */}
-                                {msg.role === 'assistant' && msg.steps && (
-                                    <div className="text-xs text-muted-foreground pl-1">
-                                        <details>
-                                            <summary className="cursor-pointer hover:underline">View Thought Process</summary>
-                                            <ul className="mt-2 space-y-1 list-disc list-inside">
-                                                {msg.steps.map((step, i) => <li key={i}>{step}</li>)}
-                                            </ul>
-                                        </details>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        <MessageBubble key={index} msg={msg} />
                     ))}
 
-                    {/* Live Status Indicator */}
+                    {/* Live Status Indicator (Floating) */}
                     {(isLoading || currentSteps.length > 0) && (
-                        <div className="max-w-3xl mx-auto">
+                        <div className="max-w-xl mx-auto my-4">
                             <OrchestratorStatus isProcessing={isLoading} steps={currentSteps} />
                         </div>
                     )}
 
-                    <div ref={scrollRef} />
+                    <div ref={scrollRef} className="h-4" />
                 </div>
             </ScrollArea>
 
-            <div className="p-4 bg-white border-t">
-                <form onSubmit={handleSubmit} className="flex gap-2 max-w-3xl mx-auto">
-                    <Input
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder="Type a message..."
-                        className="flex-1"
-                        disabled={isLoading}
-                    />
-                    <Button type="submit" disabled={isLoading} size="icon">
-                        <Send className="w-4 h-4" />
-                    </Button>
-                </form>
+            {/* Floating Input Area */}
+            <div className="p-6 bg-transparent">
+                <div className="max-w-3xl mx-auto rounded-full p-2 bg-white/70 dark:bg-black/70 backdrop-blur-xl border border-transparent flex items-center gap-2 transition-all duration-300 focus-within:bg-white/80 dark:focus-within:bg-black/80 focus-within:shadow-[0_0_0_1px_rgba(59,130,246,0.5),0_0_12px_rgba(6,182,212,0.4)] overflow-hidden bg-clip-padding">
+                    <form onSubmit={handleSubmit} className="flex-1 flex items-center px-2">
+                        <Input
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            placeholder="Type a number or text..."
+                            className="flex-1 bg-transparent !border-none !shadow-none !ring-0 !outline-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base py-6 placeholder:text-muted-foreground/70"
+                            disabled={isLoading}
+                        />
+                        <Button
+                            type="submit"
+                            disabled={isLoading}
+                            size="icon"
+                            className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-lg shadow-blue-500/30 transition-all hover:scale-105"
+                        >
+                            <Send className="w-4 h-4" />
+                        </Button>
+                    </form>
+                </div>
+                <div className="text-center mt-2">
+                    <span className="text-[10px] text-muted-foreground/50 uppercase tracking-widest">AI Powered Neural Converter</span>
+                </div>
             </div>
         </div>
     );

@@ -12,10 +12,7 @@ ORCHESTRATOR_MODEL = os.getenv("ORCHESTRATOR_MODEL", "mistral")
 NUM2TEXT_MODEL = os.getenv("NUM2TEXT_MODEL", "mistral")
 TEXT2NUM_MODEL = os.getenv("TEXT2NUM_MODEL", "mistral")
 
-print(f"🤖 Loading Agents:")
-print(f"   - Orchestrator: {ORCHESTRATOR_MODEL}")
-print(f"   - Num2Text: {NUM2TEXT_MODEL}")
-print(f"   - Text2Num: {TEXT2NUM_MODEL}")
+# Logging configuration could be set up here instead of usage of print requests.
 
 # Initialize separate LLM instances
 router_llm = ChatOllama(model=ORCHESTRATOR_MODEL, base_url=OLLAMA_BASE_URL)
@@ -61,7 +58,22 @@ def convert_text_to_num(input_str: str) -> str:
     ]
     try:
         response = text2num_llm.invoke(messages)
-        return response.content.strip()
+        content = response.content.strip()
+        # Try to parse as integer to format with commas
+        try:
+            # Remove existing commas if any, just in case
+            clean_content = content.replace(",", "").replace(" ", "")
+            if clean_content.isdigit():
+                val = int(clean_content)
+                return f"{val:,}"
+            else:
+                 # Try float
+                val = float(clean_content)
+                return f"{val:,}"
+        except ValueError:
+            pass # Return original content if not a number
+            
+        return content
     except Exception as e:
         return f"Error processing Text2Num: {str(e)}"
 
