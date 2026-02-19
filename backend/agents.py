@@ -1,9 +1,26 @@
 import os
+from dotenv import load_dotenv
 from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, SystemMessage
 
-# Initialize the Ollama model (mistral)
-llm = ChatOllama(model="mistral")
+# Load environment variables
+load_dotenv()
+
+# Configuration
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+ORCHESTRATOR_MODEL = os.getenv("ORCHESTRATOR_MODEL", "mistral")
+NUM2TEXT_MODEL = os.getenv("NUM2TEXT_MODEL", "mistral")
+TEXT2NUM_MODEL = os.getenv("TEXT2NUM_MODEL", "mistral")
+
+print(f"🤖 Loading Agents:")
+print(f"   - Orchestrator: {ORCHESTRATOR_MODEL}")
+print(f"   - Num2Text: {NUM2TEXT_MODEL}")
+print(f"   - Text2Num: {TEXT2NUM_MODEL}")
+
+# Initialize separate LLM instances
+router_llm = ChatOllama(model=ORCHESTRATOR_MODEL, base_url=OLLAMA_BASE_URL)
+num2text_llm = ChatOllama(model=NUM2TEXT_MODEL, base_url=OLLAMA_BASE_URL)
+text2num_llm = ChatOllama(model=TEXT2NUM_MODEL, base_url=OLLAMA_BASE_URL)
 
 def convert_num_to_text(input_str: str) -> str:
     """
@@ -14,7 +31,7 @@ def convert_num_to_text(input_str: str) -> str:
         HumanMessage(content=f"Convert this number to text: {input_str}")
     ]
     try:
-        response = llm.invoke(messages)
+        response = num2text_llm.invoke(messages)
         return response.content.strip()
     except Exception as e:
         return f"Error processing Num2Text: {str(e)}"
@@ -34,13 +51,16 @@ def convert_text_to_num(input_str: str) -> str:
         - "two thousand four" -> 2004
         - "three thousand and twenty" -> 3020
         - "one million one" -> 1000001
+        - "four thousand three twenty" -> 4320
+        - "two fifty" -> 250
+        - "twelve hundred fifty" -> 1250
         
-        Pay close attention to place values and zeros.
+        Pay close attention to place values, zeros, and colloquial phrasing where 'hundred' might be omitted.
         """),
         HumanMessage(content=f"Convert this text to number: {input_str}")
     ]
     try:
-        response = llm.invoke(messages)
+        response = text2num_llm.invoke(messages)
         return response.content.strip()
     except Exception as e:
         return f"Error processing Text2Num: {str(e)}"
@@ -60,7 +80,7 @@ def orchestrator_router(input_str: str) -> str:
         HumanMessage(content=f"Classify this input: {input_str}")
     ]
     try:
-        response = llm.invoke(messages)
+        response = router_llm.invoke(messages)
         content = response.content.strip().lower()
         if "num2text" in content:
             return "num2text"
