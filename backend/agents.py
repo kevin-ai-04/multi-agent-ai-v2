@@ -58,7 +58,22 @@ def convert_text_to_num(input_str: str) -> str:
     ]
     try:
         response = text2num_llm.invoke(messages)
-        return response.content.strip()
+        content = response.content.strip()
+        # Try to parse as integer to format with commas
+        try:
+            # Remove existing commas if any, just in case
+            clean_content = content.replace(",", "").replace(" ", "")
+            if clean_content.isdigit():
+                val = int(clean_content)
+                return f"{val:,}"
+            else:
+                 # Try float
+                val = float(clean_content)
+                return f"{val:,}"
+        except ValueError:
+            pass # Return original content if not a number
+            
+        return content
     except Exception as e:
         return f"Error processing Text2Num: {str(e)}"
 

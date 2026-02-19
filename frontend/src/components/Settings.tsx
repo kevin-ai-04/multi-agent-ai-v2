@@ -23,7 +23,7 @@ export function Settings() {
     return (
         <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
             <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-            
+
             <Card>
                 <CardHeader>
                     <CardTitle>Appearance</CardTitle>
@@ -41,9 +41,9 @@ export function Settings() {
                         </Label>
                         <div className="flex items-center space-x-2">
                             <Sun className="h-4 w-4 text-muted-foreground" />
-                            <Switch 
-                                id="dark-mode" 
-                                checked={theme === "dark"} 
+                            <Switch
+                                id="dark-mode"
+                                checked={theme === "dark"}
                                 onCheckedChange={toggleTheme}
                             />
                             <Moon className="h-4 w-4 text-muted-foreground" />
@@ -56,13 +56,13 @@ export function Settings() {
                 <CardHeader>
                     <CardTitle>About</CardTitle>
                     <CardDescription>
-                        Application information.
+                        Application information
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="text-sm text-muted-foreground">
-                        <p>Multi-Agent Number Converter System</p>
-                        <p>Version 2.0.0</p>
+                        <p>Multi-Agentic Procurement System</p>
+                        <p>Work in Progress</p>
                     </div>
                 </CardContent>
             </Card>

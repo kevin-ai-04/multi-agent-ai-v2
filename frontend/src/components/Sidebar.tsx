@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
-import { Bot, ChevronLeft, ChevronRight, Home, Settings as SettingsIcon, Mail } from "lucide-react"
+import { Bot, ChevronLeft, ChevronRight, Home, Settings as SettingsIcon, Mail, LayoutDashboard } from "lucide-react"
 
 import { NavItem } from "./NavItem"
 
@@ -14,8 +14,8 @@ interface SidebarProps {
     setAgentAEnabled: (enabled: boolean) => void;
     agentBEnabled: boolean;
     setAgentBEnabled: (enabled: boolean) => void;
-    activeView: "home" | "emails" | "settings";
-    setActiveView: (view: "home" | "emails" | "settings") => void;
+    activeView: "home" | "emails" | "settings" | "dashboard";
+    setActiveView: (view: "home" | "emails" | "settings" | "dashboard") => void;
     isCollapsed: boolean;
     setIsCollapsed: (collapsed: boolean) => void;
 }
@@ -56,8 +56,8 @@ export function Sidebar({
                 </div>
                 {!isCollapsed && (
                     <div className="ml-3 flex flex-col">
-                        <span className="font-bold text-lg leading-none tracking-tight">Agent<span className="text-primary">Sys</span></span>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold mt-1">v2.0</span>
+                        <span className="font-bold text-lg leading-none tracking-tight">Procurement<span className="text-primary">Console</span></span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold mt-1">v26.02.19-001</span>
                     </div>
                 )}
             </div>
@@ -69,6 +69,14 @@ export function Sidebar({
                         view="home"
                         icon={Home}
                         label="Home"
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                        isCollapsed={isCollapsed}
+                    />
+                    <NavItem
+                        view="dashboard"
+                        icon={LayoutDashboard}
+                        label="Dashboard"
                         activeView={activeView}
                         setActiveView={setActiveView}
                         isCollapsed={isCollapsed}

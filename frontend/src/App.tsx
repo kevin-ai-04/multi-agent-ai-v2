@@ -3,7 +3,16 @@ import { Sidebar } from "@/components/Sidebar"
 import { ChatInterface, Message } from "@/components/ChatInterface"
 import { Settings } from "@/components/Settings"
 import { EmailPage } from "@/components/EmailPage"
+import { Dashboard } from "@/components/Dashboard"
 import "@/index.css"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronDown, Inbox, Send, File, Trash2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 function App() {
     // Agent Configuration State
@@ -12,12 +21,20 @@ function App() {
 
     // UI State
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-    const [activeView, setActiveView] = useState<"home" | "emails" | "settings">("home")
+    const [activeView, setActiveView] = useState<"home" | "emails" | "settings" | "dashboard">("home")
+    const [emailFolder, setEmailFolder] = useState("inbox")
 
     // Chat Session State (Lifted for persistence)
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+
+    const folderMap: Record<string, string> = {
+        inbox: "Inbox",
+        sent: "Sent",
+        drafts: "Drafts",
+        trash: "Trash"
+    }
 
     return (
         <div className="flex h-screen w-full overflow-hidden mesh-gradient text-foreground transition-colors duration-500">
@@ -34,11 +51,38 @@ function App() {
 
             <main className="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300">
                 <header className="h-14 border-b border-white/10 flex items-center px-6 bg-background/50 backdrop-blur-sm sticky top-0 z-10 justify-between">
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        {activeView === 'home' && 'Multi-Agent Number Converter'}
-                        {activeView === 'emails' && 'Inbox'}
-                        {activeView === 'settings' && 'Settings'}
-                    </h1>
+                    <div className="flex items-center gap-2">
+                        {activeView === 'emails' ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hover:bg-transparent hover:text-blue-500 p-0 h-auto flex items-center gap-2">
+                                        {folderMap[emailFolder]}
+                                        <ChevronDown className="h-5 w-5 text-blue-500" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-48 glass border-white/20">
+                                    <DropdownMenuItem onClick={() => setEmailFolder("inbox")} className="gap-2 cursor-pointer">
+                                        <Inbox className="h-4 w-4" /> Inbox
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setEmailFolder("sent")} className="gap-2 cursor-pointer">
+                                        <Send className="h-4 w-4" /> Sent
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setEmailFolder("drafts")} className="gap-2 cursor-pointer">
+                                        <File className="h-4 w-4" /> Drafts
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setEmailFolder("trash")} className="gap-2 cursor-pointer text-red-400 focus:text-red-400">
+                                        <Trash2 className="h-4 w-4" /> Trash
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                {activeView === 'home' && 'Multi-Agent Number Converter'}
+                                {activeView === 'dashboard' && 'Neural Dashboard'}
+                                {activeView === 'settings' && 'Settings'}
+                            </h1>
+                        )}
+                    </div>
                 </header>
 
                 <div className="flex-1 overflow-hidden relative flex">
@@ -59,8 +103,11 @@ function App() {
                             />
                         )}
 
+                        {/* Dashboard View */}
+                        {activeView === 'dashboard' && <Dashboard messages={messages} isLoading={isLoading} />}
+
                         {/* Email View */}
-                        {activeView === 'emails' && <EmailPage />}
+                        {activeView === 'emails' && <EmailPage folder={emailFolder} />}
 
                         {/* Settings View */}
                         {activeView === 'settings' && (
