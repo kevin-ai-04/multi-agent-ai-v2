@@ -21,6 +21,24 @@ A multi-agent system using **LangGraph** to orchestrate specialized AI agents, f
 2.  **Node.js 18+**
 3.  **Ollama**: Running locally with `mistral` model (`ollama pull mistral`).
 
+## Configuration
+
+You can configure the models used by the agents by creating a `.env` file in the root directory.
+
+### `.env` Template
+Copy the following into a file named `.env`:
+
+```ini
+# Helper Config
+OLLAMA_BASE_URL=http://localhost:11434
+
+# Model Selection
+# You can change these to any model you have pulled in Ollama (e.g. llama2, mistral, gemma)
+ORCHESTRATOR_MODEL=mistral
+NUM2TEXT_MODEL=mistral
+TEXT2NUM_MODEL=mistral
+```
+
 ## Installation
 
 ### 1. Backend Setup

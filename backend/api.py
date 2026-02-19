@@ -45,3 +45,37 @@ async def chat_endpoint(request: ChatRequest):
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+# --- Email Functionality ---
+from backend.email_service import EmailService
+
+email_service = EmailService()
+
+class EmailItem(BaseModel):
+    id: str
+    subject: str
+    sender: str
+    date: str
+    body: str # This serves as preview or full body depending on fetch
+    folder: str
+
+class SendEmailRequest(BaseModel):
+    to_email: str
+    subject: str
+    body: str
+
+@app.get("/emails/{folder}", response_model=list[EmailItem])
+async def get_emails(folder: str, limit: int = 20):
+    try:
+        emails = email_service.fetch_emails(folder, limit)
+        return emails
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/emails/send")
+async def send_email_endpoint(request: SendEmailRequest):
+    success = email_service.send_email(request.to_email, request.subject, request.body)
+    if success:
+        return {"status": "success", "message": "Email sent successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send email")
