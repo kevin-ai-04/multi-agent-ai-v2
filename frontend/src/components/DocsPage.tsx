@@ -81,6 +81,24 @@ export function DocsPage() {
                                     <br />Example: <code>123</code> &rarr; "one hundred twenty-three".
                                 </p>
                             </Card>
+                            <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm">
+                                <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-green-500"></span> Email Agent
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                    Specialized in converting numeric digits into their written English equivalent.
+                                    <br />Example: <code>123</code> &rarr; "one hundred twenty-three".
+                                </p>
+                            </Card>
+                            <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm">
+                                <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-green-500"></span> Procurement Agent
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                    Specialized in converting numeric digits into their written English equivalent.
+                                    <br />Example: <code>123</code> &rarr; "one hundred twenty-three".
+                                </p>
+                            </Card>
 
                             <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm">
                                 <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
