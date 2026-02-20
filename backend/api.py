@@ -48,6 +48,14 @@ async def health_check():
 
 # --- Email Functionality ---
 from backend.email_service import EmailService
+from backend.database import init_db, get_emails as db_get_emails
+
+# Initialize DB on startup
+# In a real app, use lifespan or startup event, but simple call here works for global scope if import side-effects are managed.
+# Better to put it in a function.
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 email_service = EmailService()
 
@@ -56,7 +64,7 @@ class EmailItem(BaseModel):
     subject: str
     sender: str
     date: str
-    body: str # This serves as preview or full body depending on fetch
+    body: str
     folder: str
 
 class SendEmailRequest(BaseModel):
@@ -67,8 +75,18 @@ class SendEmailRequest(BaseModel):
 @app.get("/emails/{folder}", response_model=list[EmailItem])
 async def get_emails(folder: str, limit: int = 20):
     try:
-        emails = email_service.fetch_emails(folder, limit)
+        # Read from local DB
+        emails = db_get_emails(folder, limit)
         return emails
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/emails/sync")
+async def sync_emails(folder: str = "INBOX"):
+    try:
+        # Fetch from IMAP and save to DB
+        emails = email_service.fetch_emails(folder, limit=20)
+        return {"status": "success", "count": len(emails), "message": f"Synced {len(emails)} emails from {folder}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

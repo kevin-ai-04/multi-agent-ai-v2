@@ -23,9 +23,10 @@ import {
     MoreHorizontal,
     Star,
     Mail,
-    ArrowLeft
+    ArrowLeft,
+    RefreshCw
 } from "lucide-react";
-import { fetchEmails, sendEmail, EmailItem } from "@/api/client";
+import { fetchEmails, sendEmail, syncEmails, EmailItem } from "@/api/client";
 
 interface EmailPageProps {
     folder: string;
@@ -36,6 +37,7 @@ export function EmailPage({ folder }: EmailPageProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedEmail, setSelectedEmail] = useState<EmailItem | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     // Compose State
     const [isComposeOpen, setIsComposeOpen] = useState(false);
@@ -55,6 +57,18 @@ export function EmailPage({ folder }: EmailPageProps) {
             console.error("Failed to load emails", error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleSync = async () => {
+        setIsSyncing(true);
+        try {
+            await syncEmails(folder);
+            await loadEmails();
+        } catch (error) {
+            alert("Failed to sync emails");
+        } finally {
+            setIsSyncing(false);
         }
     };
 
@@ -174,7 +188,17 @@ export function EmailPage({ folder }: EmailPageProps) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={loadEmails} disabled={isLoading} className="text-muted-foreground hover:text-primary">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleSync}
+                        disabled={isSyncing}
+                        className="text-muted-foreground hover:text-primary"
+                        title="Sync from Server"
+                    >
+                        <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={loadEmails} disabled={isLoading} className="text-muted-foreground hover:text-primary" title="Refresh View">
                         <RotateCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </Button>
 

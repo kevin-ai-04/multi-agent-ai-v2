@@ -63,3 +63,13 @@ export async function sendEmail(data: SendEmailRequest): Promise<void> {
         throw new Error(`Failed to send email: ${response.statusText}`);
     }
 }
+
+export async function syncEmails(folder: string): Promise<{ count: number; message: string }> {
+    const response = await fetch(`${API_BASE_URL}/emails/sync?folder=${folder}`, {
+        method: "POST",
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to sync emails: ${response.statusText}`);
+    }
+    return response.json();
+}

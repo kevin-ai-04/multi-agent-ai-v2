@@ -6,6 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from email.header import decode_header
 import os
 from dotenv import load_dotenv
+from backend.database import save_emails
 
 # Load environment variables
 load_dotenv()
@@ -23,7 +24,7 @@ class EmailService:
     def fetch_emails(self, folder="INBOX", limit=20):
         """
         Fetches emails from the specified folder via IMAP.
-        Returns a list of dicts: {id, subject, sender, date, body_preview}
+        Saves them to the database and returns the list.
         """
         try:
             # Connect to IMAP
@@ -117,6 +118,10 @@ class EmailService:
 
             mail.close()
             mail.logout()
+            
+            # Save to database
+            save_emails(email_list)
+            
             return email_list
 
         except Exception as e:
