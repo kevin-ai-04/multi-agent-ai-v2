@@ -251,6 +251,14 @@ export function EmailPage({ folder }: EmailPageProps) {
                                             <span className="font-medium text-foreground">{analysisData.vendor_name || 'N/A'}</span>
                                         </div>
                                         <div>
+                                            <span className="text-muted-foreground block text-xs">Vendor Email</span>
+                                            <span className="font-medium text-foreground">{analysisData.vendor_email || 'N/A'}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Vendor Phone</span>
+                                            <span className="font-medium text-foreground">{analysisData.vendor_phone || 'N/A'}</span>
+                                        </div>
+                                        <div>
                                             <span className="text-muted-foreground block text-xs">Unit Cost</span>
                                             <span className="font-medium text-foreground">
                                                 {analysisData.item_unit_price ? `$${analysisData.item_unit_price.toLocaleString()}` : 'N/A'}

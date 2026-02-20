@@ -61,61 +61,75 @@ export function DocsPage() {
                             <Bot className="h-6 w-6" />
                             <h3 className="text-2xl font-semibold text-foreground">The Agent Swarm</h3>
                         </div>
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm">
-                                <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span> Orchestrator
-                                </h4>
-                                <p className="text-sm text-muted-foreground">
-                                    The central brain. It delegates tasks to the specialized procurement agents based on the user's overarching goals, compiling their results into actionable summaries.
-                                </p>
-                            </Card>
+                        <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm md:col-span-2">
+                            <h4 className="font-bold text-xl mb-3 flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span> Orchestrator
+                            </h4>
+                            <p className="text-foreground/90 leading-relaxed mb-4">
+                                The core routing mechanism for the entire Multi-Agent architecture. It receives all top-level inputs (text, voice, or systemic triggers) and uses an LLM to determine intent.
+                            </p>
+                            <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
+                                <li><strong>State Management:</strong> Maintains the global context across sub-agents using LangGraph's state dictionary.</li>
+                                <li><strong>Dynamic Routing:</strong> Evaluates incoming prompts to decide if it should call the Email Agent, Query Database, or respond directly.</li>
+                                <li><strong>Fallback & Escalation:</strong> Handles errors from sub-agents gracefully and prompts the user for clarification if a task is ambiguous.</li>
+                            </ul>
+                        </Card>
 
-                            <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm">
-                                <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-sky-500"></span> Email Agent (WIP)
-                                </h4>
-                                <p className="text-sm text-muted-foreground">
-                                    Monitors the inbox for new requests or vendor replies. It parses incoming emails to extract crucial details like items, quantities, and vendor information.
-                                </p>
-                            </Card>
+                        <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm md:col-span-2">
+                            <h4 className="font-bold text-xl mb-3 flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.8)]"></span> Email Agent
+                            </h4>
+                            <p className="text-foreground/90 leading-relaxed mb-4">
+                                An autonomous inbox processor designed to transform unstructured conversational emails into formatted procurement data.
+                            </p>
+                            <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
+                                <li><strong>Information Extraction:</strong> Uses an LLM constrained by Pydantic schemas to pull out `item_name`, `quantity`, and temporal requirements (e.g., "Need in 5 days").</li>
+                                <li><strong>Database Linking:</strong> Hooks the extracted text to precise Database records using text matching, fetching unit costs and associating reliable vendor profiles.</li>
+                                <li><strong>Mathematical Priority:</strong> Automatically calculates Urgency Priority (High/Medium/Low) strictly based on the requested temporal delivery windows.</li>
+                            </ul>
+                        </Card>
 
-                            <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm">
-                                <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-rose-500"></span> Compliance Agent (WIP)
-                                </h4>
-                                <p className="text-sm text-muted-foreground">
-                                    Ensures all operations adhere to internal company policies. It cross-references orders against budget constraints and vendor approval scores.
-                                </p>
-                            </Card>
+                        <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm md:col-span-2">
+                            <h4 className="font-bold text-xl mb-3 flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)]"></span> Compliance Agent (WIP)
+                            </h4>
+                            <p className="text-foreground/90 leading-relaxed mb-4">
+                                The gatekeeper of corporate policy. Before any purchase order can be drafted, this agent verifies that the proposed order meets all legal and internal thresholds.
+                            </p>
+                            <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
+                                <li><strong>Budget Verification:</strong> Checks the designated department's `limit_amount` and `used_amount` to ensure sufficient funds.</li>
+                                <li><strong>Vendor Scoring:</strong> Enforces the `min_vendor_score` policy, rejecting orders aimed at suppliers with poor historical performance.</li>
+                                <li><strong>Audit Logging:</strong> Automatically generates compliance notes for any order exceeding the `max_single_order_amount` requiring manager approval.</li>
+                            </ul>
+                        </Card>
 
-                            <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm">
-                                <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-amber-500"></span> Order Agent (WIP)
-                                </h4>
-                                <p className="text-sm text-muted-foreground">
-                                    Generates formal purchase orders and interacts with the internal system to log details, change status, and eventually draft completion PDFs.
-                                </p>
-                            </Card>
+                        <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm md:col-span-2">
+                            <h4 className="font-bold text-xl mb-3 flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]"></span> Order Agent (WIP)
+                            </h4>
+                            <p className="text-foreground/90 leading-relaxed mb-4">
+                                The execution arm of the system. Once an intent is established and compliance cleared, this agent materializes the transaction.
+                            </p>
+                            <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
+                                <li><strong>Drafting:</strong> Assembles the validated item, quantity, vendor, and cost data into a standardized JSON payload structure.</li>
+                                <li><strong>PDF Generation:</strong> Compiles the digital data into a formal, printable PDF document format suitable for vendor dispatch.</li>
+                                <li><strong>Status Management:</strong> Transitions order status from `DRAFT` to `PENDING` to `APPROVED` within the SQLite backend.</li>
+                            </ul>
+                        </Card>
 
-                            <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm">
-                                <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-teal-500"></span> Forecast Agent (WIP)
-                                </h4>
-                                <p className="text-sm text-muted-foreground">
-                                    Uses historical data across the database to predict future material requirements and recommends proactive restocking measures.
-                                </p>
-                            </Card>
-                            <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm">
-                                <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-red-500"></span> Local LLM
-                                </h4>
-                                <p className="text-sm text-muted-foreground">
-                                    All agents are powered by <strong>Ollama</strong> running local models (e.g., Llama 3, Mistral).
-                                    This ensures zero data leakage and operation without an internet connection.
-                                </p>
-                            </Card>
-                        </div>
+                        <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm md:col-span-2">
+                            <h4 className="font-bold text-xl mb-3 flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.8)]"></span> Forecast Agent (WIP)
+                            </h4>
+                            <p className="text-foreground/90 leading-relaxed mb-4">
+                                A proactive analytical agent that works strictly in the background to prevent supply chain bottlenecks.
+                            </p>
+                            <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
+                                <li><strong>Inventory Monitoring:</strong> Continuously polls the `inventory` table against the `min_qty` limits.</li>
+                                <li><strong>Predictive Analytics:</strong> Uses historical order velocity to predict when an item will stock out based on current `qty_on_hand`.</li>
+                                <li><strong>Autonomous Drafting:</strong> When a stock-out is predicted, it autonomously prepares a "Restock Draft" email and queues it for the Orchestrator to notify the user.</li>
+                            </ul>
+                        </Card>
                     </section>
 
                     {/* Features */}
