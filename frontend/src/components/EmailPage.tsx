@@ -226,8 +226,8 @@ export function EmailPage({ folder }: EmailPageProps) {
                         {!isLoadingAnalysis && analysisData && (
                             <div className="mb-8 overflow-hidden rounded-xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-blue-500/5 backdrop-blur-sm">
                                 <div className="px-6 py-3 border-b border-purple-500/10 bg-purple-500/10 flex items-center gap-2">
-                                    <Wand2 className="h-4 w-4 text-purple-400" />
-                                    <h3 className="text-sm font-semibold text-purple-200">AI Analysis Summary</h3>
+                                    <Wand2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                    <h3 className="text-sm font-semibold text-purple-800 dark:text-purple-200">AI Analysis Summary</h3>
                                 </div>
                                 <div className="p-6">
                                     <p className="text-sm text-foreground/90 mb-4">{analysisData.summary}</p>
