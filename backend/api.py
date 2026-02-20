@@ -97,3 +97,38 @@ async def send_email_endpoint(request: SendEmailRequest):
         return {"status": "success", "message": "Email sent successfully"}
     else:
         raise HTTPException(status_code=500, detail="Failed to send email")
+
+# --- Generic Database Functionality ---
+from backend.database import get_tables as db_get_tables, get_table_data as db_get_table_data, update_table_row as db_update_table_row
+
+class UpdateRowRequest(BaseModel):
+    original_row: dict
+    updated_row: dict
+
+@app.get("/database/tables")
+async def api_get_tables():
+    try:
+        tables = db_get_tables()
+        return {"tables": tables}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/database/tables/{table_name}")
+async def api_get_table_data(table_name: str):
+    try:
+        data = db_get_table_data(table_name)
+        return {"data": data}
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/database/tables/{table_name}")
+async def api_update_table_row(table_name: str, request: UpdateRowRequest):
+    try:
+        db_update_table_row(table_name, request.original_row, request.updated_row)
+        return {"status": "success"}
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

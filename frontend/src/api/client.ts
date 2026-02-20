@@ -73,3 +73,41 @@ export async function syncEmails(folder: string): Promise<{ count: number; messa
     }
     return response.json();
 }
+
+// --- Database Functionality ---
+
+export async function getTables(): Promise<{ tables: string[] }> {
+    const response = await fetch(`${API_BASE_URL}/database/tables`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch tables: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+export async function getTableData(tableName: string): Promise<{ data: any[] }> {
+    const response = await fetch(`${API_BASE_URL}/database/tables/${tableName}`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch table data for ${tableName}: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+export async function updateTableRow(tableName: string, originalRow: any, updatedRow: any): Promise<{ status: string }> {
+    const response = await fetch(`${API_BASE_URL}/database/tables/${tableName}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            original_row: originalRow,
+            updated_row: updatedRow
+        }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to update row: ${response.statusText}`);
+    }
+
+    return response.json();
+}

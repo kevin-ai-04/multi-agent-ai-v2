@@ -1,14 +1,16 @@
-# Multi-Agent Number Converter
+# Multi-Agent Procurement Management
 
-A multi-agent system using **LangGraph** to orchestrate specialized AI agents, featuring a **React + Vite** frontend and **FastAPI** backend.
+A sophisticated multi-agent system using **LangGraph** to orchestrate specialized AI agents for autonomous procurement workflows, featuring a **React + Vite** frontend and **FastAPI** backend with localized SQLite storage.
 
 ## System Architecture
 
 ### Backend (Python)
-- **Orchestrator**: Analyzes input to route to specific agents.
-- **Agent A (Num2Text)**: Converts digits to text (e.g., "42" -> "forty-two").
-- **Agent B (Text2Num)**: Converts text to digits (e.g., "one hundred" -> "100").
-- **FastAPI**: Exposes the workflow via REST API.
+- **Orchestrator**: Analyzes user input and delegates tasks to specialized agents based on procurement goals.
+- **Email Agent**: Parses incoming emails for orders and vendor communications.
+- **Compliance Agent**: Validates requests against budgets and policies.
+- **Order Agent**: Generates purchase orders and interacts with the inventory system.
+- **Forecast Agent**: Predicts future inventory needs based on historical data.
+- **FastAPI**: Exposes the workflow and SQLite database via REST API.
 
 ### Frontend (React)
 - **Vite + React + TypeScript**: Fast, modern frontend.
@@ -51,7 +53,13 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Frontend Setup
+### 2. Database Initialization
+Initialize the `procurement.db` SQLite database with the full schema and seed data before running the application:
+```bash
+python scripts/db_init.py
+```
+
+### 3. Frontend Setup
 ```bash
 cd frontend
 npm install

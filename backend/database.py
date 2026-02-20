@@ -2,8 +2,11 @@ import sqlite3
 import json
 from datetime import datetime
 import os
+from pathlib import Path
 
-DB_NAME = "emails.db"
+# DB is located at backend/data/procurement.db
+DB_DIR = Path(__file__).resolve().parent / "data"
+DB_NAME = str(DB_DIR / "procurement.db")
 
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
@@ -11,22 +14,10 @@ def get_db_connection():
     return conn
 
 def init_db():
-    conn = get_db_connection()
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS emails (
-            id TEXT PRIMARY KEY,
-            subject TEXT,
-            sender TEXT,
-            date TEXT,
-            body TEXT,
-            folder TEXT,
-            is_read BOOLEAN DEFAULT 0,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    conn.close()
+    # Database initialization is now handled by scripts/db_init.py
+    # We just ensure the directory exists here just in case.
+    DB_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def save_emails(emails):
     """
@@ -74,3 +65,72 @@ def get_emails(folder, limit=50, offset=0):
     conn.close()
     
     return [dict(row) for row in rows]
+
+def get_tables():
+    """Returns a list of all table names in the database."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+    tables = [row['name'] for row in c.fetchall()]
+    conn.close()
+    return tables
+
+def get_table_data(table_name: str):
+    """Returns all rows from a specified table."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    # Basic validation to prevent obvious SQLi. In a real app, use stricter allowlists.
+    if not table_name.isidentifier():
+        raise ValueError(f"Invalid table name: {table_name}")
+        
+    c.execute(f"SELECT * FROM {table_name}")
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def update_table_row(table_name: str, original_row: dict, updated_row: dict):
+    """
+    Dynamically updates a row. Uses the original_row to construct the WHERE clause
+    to ensure we update the exact row that was edited.
+    """
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if not table_name.isidentifier():
+        raise ValueError("Invalid table name")
+
+    # Construct SET clause
+    set_clauses = []
+    set_values = []
+    for key, value in updated_row.items():
+        if not key.isidentifier():
+            continue
+        set_clauses.append(f"{key} = ?")
+        set_values.append(value)
+        
+    # Construct WHERE clause based on ALL original row values to act as a pseudo-primary key check
+    where_clauses = []
+    where_values = []
+    for key, value in original_row.items():
+         if not key.isidentifier():
+            continue
+         if value is None:
+             where_clauses.append(f"{key} IS NULL")
+         else:
+             where_clauses.append(f"{key} = ?")
+             where_values.append(value)
+             
+    if not set_clauses or not where_clauses:
+        raise ValueError("Empty update or condition")
+        
+    query = f"UPDATE {table_name} SET {', '.join(set_clauses)} WHERE {' AND '.join(where_clauses)}"
+    
+    try:
+        c.execute(query, set_values + where_values)
+        if c.rowcount == 0:
+            raise ValueError("No matching row found to update. Data might have been concurrenty modified.")
+        conn.commit()
+    finally:
+        conn.close()
+        
+    return True

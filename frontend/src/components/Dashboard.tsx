@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Brain, Activity, Terminal, ArrowRight, CheckCircle2, Clock, AlertCircle, Calculator, Type } from "lucide-react";
+import { Brain, Activity, Terminal, ArrowRight, CheckCircle2, Clock, AlertCircle, Calculator, Type, Mail, Shield, ShoppingCart, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Message } from "./ChatInterface";
@@ -36,6 +36,54 @@ const initialAgents: Agent[] = [
         description: "Central neural unit responsible for breaking down user requests and delegating sub-tasks to specialized agents.",
         thoughts: ["System initialized.", "Waiting for input..."],
         capabilities: ["Task Delegation", "Context Management", "Error Recovery"]
+    },
+    {
+        id: "agent-email-05",
+        key: "Email Agent",
+        name: "Email Agent (WIP)",
+        role: "Communication",
+        status: "idle",
+        icon: Mail,
+        color: "from-sky-500 to-blue-600",
+        description: "Handles incoming and outgoing email communications, extracting orders or vendor queries.",
+        thoughts: ["Model loaded.", "Monitoring inbox..."],
+        capabilities: ["Email Parsing", "Drafting Responses"]
+    },
+    {
+        id: "agent-comp-06",
+        key: "Compliance Agent",
+        name: "Compliance Agent (WIP)",
+        role: "Policy Enforcer",
+        status: "idle",
+        icon: Shield,
+        color: "from-rose-500 to-red-600",
+        description: "Checks procurement requests against company policies, budget limits, and vendor restrictions.",
+        thoughts: ["Policies loaded.", "Ready for validation."],
+        capabilities: ["Policy Check", "Budget Approval"]
+    },
+    {
+        id: "agent-order-07",
+        key: "Order Agent",
+        name: "Order Agent (WIP)",
+        role: "Order Management",
+        status: "idle",
+        icon: ShoppingCart,
+        color: "from-amber-500 to-yellow-600",
+        description: "Processes and tracks purchase orders, managing interactions with the inventory system.",
+        thoughts: ["System connected.", "Awaiting orders."],
+        capabilities: ["Order Creation", "Status Tracking"]
+    },
+    {
+        id: "agent-forecast-08",
+        key: "Forecast Agent",
+        name: "Forecast Agent (WIP)",
+        role: "Predictive Analytics",
+        status: "idle",
+        icon: TrendingUp,
+        color: "from-teal-500 to-emerald-600",
+        description: "Analyzes historical data to predict future inventory needs and suggest restock timelines.",
+        thoughts: ["Data models loaded.", "Ready for analysis."],
+        capabilities: ["Trend Prediction", "Demand Forecasting"]
     },
     {
         id: "agent-a-02",

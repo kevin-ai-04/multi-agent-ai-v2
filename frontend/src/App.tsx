@@ -5,6 +5,7 @@ import { Settings } from "@/components/Settings"
 import { EmailPage } from "@/components/EmailPage"
 import { Dashboard } from "@/components/Dashboard"
 import { DocsPage } from "@/components/DocsPage"
+import { DatabasePage } from "@/components/DatabasePage"
 import "@/index.css"
 import {
     DropdownMenu,
@@ -22,7 +23,7 @@ function App() {
 
     // UI State
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-    const [activeView, setActiveView] = useState<"home" | "emails" | "settings" | "dashboard" | "docs">("home")
+    const [activeView, setActiveView] = useState<"home" | "emails" | "settings" | "dashboard" | "docs" | "database">("home")
     const [emailFolder, setEmailFolder] = useState("inbox")
 
     // Chat Session State (Lifted for persistence)
@@ -81,6 +82,7 @@ function App() {
                                 {activeView === 'home' && 'Multi-Agent Number Converter'}
                                 {activeView === 'dashboard' && 'Neural Dashboard'}
                                 {activeView === 'docs' && 'Documentation'}
+                                {activeView === 'database' && 'Database Viewer'}
                                 {activeView === 'settings' && 'Settings'}
                             </h1>
                         )}
@@ -113,6 +115,9 @@ function App() {
 
                         {/* Docs View */}
                         {activeView === 'docs' && <DocsPage />}
+
+                        {/* Database View */}
+                        {activeView === 'database' && <DatabasePage />}
 
                         {/* Settings View */}
                         {activeView === 'settings' && (
