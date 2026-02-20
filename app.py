@@ -3,7 +3,7 @@ from backend.graph import app as workflow
 
 # Page Configuration
 st.set_page_config(
-    page_title="Multi-Agent Number Converter",
+    page_title="Multi-Agent Procurement System",
     page_icon="🤖",
     layout="wide"
 )
@@ -29,7 +29,7 @@ with st.sidebar:
         st.warning("System Degraded: Some Agents Disabled")
 
 # Main Interface
-st.title("🤖 Multi-Agent Number Converter")
+st.title("🤖 Multi-Agent Procurement System")
 st.markdown("""
 This system uses a central **Orchestrator** to route your input to the appropriate specialist agent:
 - **Agent A (Num2Text)**: Converts digits to text (e.g., 42 -> forty-two)

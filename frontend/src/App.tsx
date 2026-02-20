@@ -79,7 +79,7 @@ function App() {
                             </DropdownMenu>
                         ) : (
                             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                                {activeView === 'home' && 'Multi-Agent Number Converter'}
+                                {activeView === 'home' && 'Multi-Agent Procurement System'}
                                 {activeView === 'dashboard' && 'Neural Dashboard'}
                                 {activeView === 'docs' && 'Documentation'}
                                 {activeView === 'database' && 'Database Viewer'}

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from backend.graph import app as workflow
 
-app = FastAPI(title="Multi-Agent Number Converter API")
+app = FastAPI(title="Multi-Agent Procurement System API")
 
 # Configure CORS (allow frontend to connect)
 app.add_middleware(
