@@ -138,6 +138,21 @@ def update_table_row(table_name: str, original_row: dict, updated_row: dict):
         
     return True
 
+def delete_table_data(table_name: str):
+    """Deletes all rows from a given table."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    if not table_name.isidentifier():
+        raise ValueError("Invalid table name")
+        
+    try:
+        c.execute(f"DELETE FROM {table_name}")
+        conn.commit()
+    finally:
+        conn.close()
+    return True
+
 # --- Email Analysis Features ---
 
 def get_item_by_name(query: str):

@@ -111,7 +111,7 @@ function App() {
                         {activeView === 'dashboard' && <Dashboard messages={messages} isLoading={isLoading} />}
 
                         {/* Email View */}
-                        {activeView === 'emails' && <EmailPage folder={emailFolder} />}
+                        {activeView === 'emails' && <EmailPage folder={emailFolder} setMessages={setMessages} />}
 
                         {/* Docs View */}
                         {activeView === 'docs' && <DocsPage />}

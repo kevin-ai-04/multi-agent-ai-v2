@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react"
-import { getTables, getTableData, updateTableRow } from "@/api/client"
+import { getTables, getTableData, updateTableRow, deleteTableData } from "@/api/client"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Loader2, Database, Edit2, Check, X } from "lucide-react"
+import { Loader2, Database, Edit2, Check, X, Trash2 } from "lucide-react"
 import {
     Table,
     TableBody,
@@ -111,6 +111,23 @@ export function DatabasePage() {
         }
     };
 
+    const [isDeletingData, setIsDeletingData] = useState(false);
+
+    const handleDeleteAll = async () => {
+        if (!selectedTable || selectedTable !== 'email_analysis') return;
+        if (!confirm(`Are you sure you want to delete all records from ${selectedTable}? This cannot be undone.`)) return;
+
+        setIsDeletingData(true);
+        try {
+            await deleteTableData(selectedTable);
+            await fetchTableData(selectedTable);
+        } catch (error: any) {
+            console.error("Failed to delete table data:", error);
+            alert(error.message || "Failed to delete data. Please try again.");
+        } finally {
+            setIsDeletingData(false);
+        }
+    };
 
     return (
         <div className="flex h-full w-full overflow-hidden">
@@ -149,7 +166,7 @@ export function DatabasePage() {
             {/* Main content area for viewing rows */}
             <div className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Header block with selected table name */}
-                <div className="h-16 border-b border-white/5 bg-black/5 flex items-center px-8">
+                <div className="h-16 border-b border-white/5 bg-black/5 flex items-center px-8 justify-between">
                     <h1 className="text-xl font-bold font-mono tracking-wider flex items-center gap-3">
                         {selectedTable ? (
                             <>
@@ -158,6 +175,19 @@ export function DatabasePage() {
                             </>
                         ) : "Select a table"}
                     </h1>
+
+                    {selectedTable === 'email_analysis' && data.length > 0 && (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20"
+                            onClick={handleDeleteAll}
+                            disabled={isDeletingData || isLoadingData}
+                        >
+                            {isDeletingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                            Delete Analysis Data
+                        </Button>
+                    )}
                 </div>
 
                 {/* Table Data Viewer */}

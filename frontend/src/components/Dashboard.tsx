@@ -35,19 +35,19 @@ const initialAgents: Agent[] = [
         color: "from-purple-500 to-indigo-600",
         description: "Central neural unit responsible for breaking down user requests and delegating sub-tasks to specialized agents.",
         thoughts: ["System initialized.", "Waiting for input..."],
-        capabilities: ["Task Delegation", "Context Management", "Error Recovery"]
+        capabilities: ["Intent Classification", "Task Delegation", "Context Management"]
     },
     {
         id: "agent-email-05",
         key: "Email Agent",
-        name: "Email Agent (WIP)",
+        name: "Email Agent",
         role: "Communication",
         status: "idle",
         icon: Mail,
         color: "from-sky-500 to-blue-600",
         description: "Handles incoming and outgoing email communications, extracting orders or vendor queries.",
         thoughts: ["Model loaded.", "Monitoring inbox..."],
-        capabilities: ["Email Parsing", "Drafting Responses"]
+        capabilities: ["Email Parsing", "Supplier Search", "Cost Calculation"]
     },
     {
         id: "agent-comp-06",

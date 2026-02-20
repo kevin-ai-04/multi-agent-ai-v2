@@ -112,9 +112,21 @@ export async function updateTableRow(tableName: string, originalRow: any, update
     return response.json();
 }
 
+export async function deleteTableData(tableName: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/database/tables/${tableName}`, {
+        method: "DELETE",
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to delete table data: ${response.statusText}`);
+    }
+    return response.json();
+}
+
 // --- Email Analysis API ---
 
-export async function analyzeEmail(emailId: string): Promise<{ status: string, data: any }> {
+export async function analyzeEmail(emailId: string): Promise<{ status: string, data: any, step?: string }> {
     const response = await fetch(`${API_BASE_URL}/emails/${emailId}/analyze`, {
         method: "POST",
     });

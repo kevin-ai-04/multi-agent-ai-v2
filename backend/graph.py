@@ -1,6 +1,7 @@
 from typing import TypedDict, Literal
 from langgraph.graph import StateGraph, END
-from backend.agents import convert_num_to_text, convert_text_to_num, orchestrator_router
+from backend.agents import convert_num_to_text, convert_text_to_num, orchestrator_router, analyze_email_content
+from backend.database import get_unanalyzed_emails, get_item_by_name, get_vendor, save_email_analysis
 
 # 1. Define State
 class AgentState(TypedDict):
@@ -10,6 +11,7 @@ class AgentState(TypedDict):
     steps: list[str]
     agent_a_enabled: bool
     agent_b_enabled: bool
+    agent_email_enabled: bool
 
 # 2. Define Nodes
 def orchestrator_node(state: AgentState):
@@ -42,13 +44,56 @@ def agent_text2num_node(state: AgentState):
         "steps": state.get("steps", []) + [f"Agent B (Text2Num): Converted '{state['input_text']}' to '{result}'."]
     }
 
+def agent_email_node(state: AgentState):
+    """
+    Executes Email Agent batch analysis.
+    """
+    steps = state.get("steps", []) + ["Email Agent: Analyzing inbox..."]
+    
+    unanalyzed = get_unanalyzed_emails()
+    if not unanalyzed:
+        return {
+            "output_text": "No new emails to analyze right now.",
+            "steps": steps + ["Email Agent: No unanalyzed emails found."]
+        }
+    
+    count = 0
+    for email in unanalyzed:
+        try:
+            email_id = email['id']
+            body = email['body']
+            analysis_data = analyze_email_content(body)
+            if not analysis_data:
+                continue
+            
+            item_data = None
+            vendor_data = None
+            if analysis_data.get('item_name'):
+                item_data = get_item_by_name(analysis_data['item_name'])
+                
+            if item_data and item_data.get('default_vendor_id'):
+                vendor_data = get_vendor(item_data['default_vendor_id'])
+                
+            save_email_analysis(email_id, analysis_data, item_data, vendor_data)
+            steps.append(f"Email Agent: Analyzed email '{email_id}' -> {analysis_data.get('item_name', 'Unknown Item')}")
+            count += 1
+        except Exception as e:
+            steps.append(f"Email Agent: Failed to analyze email '{email_id}'. Error: {str(e)}")
+            pass
+            
+    steps.append(f"Email Agent: Processed {count} emails.")
+    return {
+        "output_text": f"Successfully analyzed {count} new email(s).",
+        "steps": steps
+    }
+
 def unknown_node(state: AgentState):
     """
     Handles unclear input.
     """
     return {
-        "output_text": "I'm sorry, I couldn't determine if that was a number or text. Please try again.",
-        "steps": state.get("steps", []) + ["Orchestrator: Could not determine type. Execution stopped."]
+        "output_text": "I'm sorry, I couldn't determine the intent. Please try asking about your inbox or converting a number.",
+        "steps": state.get("steps", []) + ["Orchestrator: Could not determine intent. Execution stopped."]
     }
 
 def service_unavailable_node(state: AgentState):
@@ -61,14 +106,15 @@ def service_unavailable_node(state: AgentState):
     }
 
 # 3. Define Conditional Logic
-def route_decision(state: AgentState) -> Literal["agent_num2text", "agent_text2num", "unknown", "service_unavailable"]:
+def route_decision(state: AgentState) -> Literal["agent_num2text", "agent_text2num", "agent_email", "unknown", "service_unavailable"]:
     decision = state["routing_decision"]
     agent_enabled_map = {
         "num2text": state.get("agent_a_enabled", True),
-        "text2num": state.get("agent_b_enabled", True)
+        "text2num": state.get("agent_b_enabled", True),
+        "email": state.get("agent_email_enabled", True)
     }
 
-    if decision in ["num2text", "text2num"]:
+    if decision in ["num2text", "text2num", "email"]:
         if agent_enabled_map[decision]:
             return f"agent_{decision}"
         else:
@@ -83,6 +129,7 @@ workflow = StateGraph(AgentState)
 workflow.add_node("orchestrator", orchestrator_node)
 workflow.add_node("agent_num2text", agent_num2text_node)
 workflow.add_node("agent_text2num", agent_text2num_node)
+workflow.add_node("agent_email", agent_email_node)
 workflow.add_node("unknown", unknown_node)
 workflow.add_node("service_unavailable", service_unavailable_node)
 
@@ -96,6 +143,7 @@ workflow.add_conditional_edges(
     {
         "agent_num2text": "agent_num2text",
         "agent_text2num": "agent_text2num",
+        "agent_email": "agent_email",
         "unknown": "unknown",
         "service_unavailable": "service_unavailable"
     }
@@ -104,6 +152,7 @@ workflow.add_conditional_edges(
 # Add edges to END
 workflow.add_edge("agent_num2text", END)
 workflow.add_edge("agent_text2num", END)
+workflow.add_edge("agent_email", END)
 workflow.add_edge("unknown", END)
 workflow.add_edge("service_unavailable", END)
 

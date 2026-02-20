@@ -83,11 +83,12 @@ def orchestrator_router(input_str: str) -> str:
     Returns: 'num2text', 'text2num', or 'unknown'
     """
     messages = [
-        SystemMessage(content="""You are an orchestration agent. Your job is to classify the user input into one of two categories:
+        SystemMessage(content="""You are an orchestration agent. Your job is to classify the user input into one of three categories:
         1. 'num2text': The input consists primarily of digits (e.g., '42', '1050').
         2. 'text2num': The input consists primarily of number words (e.g., 'forty-two', 'one hundred').
+        3. 'email': The user is asking about their emails, inbox, or wants to analyze new incoming requests (e.g., 'check my inbox', 'analyze emails', 'read mail').
         
-        Return ONLY 'num2text' or 'text2num'. If it is unclear, default to 'unknown'.
+        Return ONLY 'num2text', 'text2num', or 'email'. If it is unclear, default to 'unknown'.
         """),
         HumanMessage(content=f"Classify this input: {input_str}")
     ]
@@ -98,6 +99,8 @@ def orchestrator_router(input_str: str) -> str:
             return "num2text"
         elif "text2num" in content:
             return "text2num"
+        elif "email" in content:
+            return "email"
         else:
             return "unknown"
     except Exception as e:

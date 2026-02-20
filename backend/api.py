@@ -133,6 +133,17 @@ async def api_update_table_row(table_name: str, request: UpdateRowRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.delete("/database/tables/{table_name}")
+async def api_delete_table_data(table_name: str):
+    try:
+        from backend.database import delete_table_data as db_delete_table_data
+        db_delete_table_data(table_name)
+        return {"status": "success", "message": f"Deleted all records from {table_name}"}
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # --- Email Analysis API ---
 from backend.agents import analyze_email_content
 from backend.database import get_item_by_name, get_vendor, save_email_analysis, get_email_analysis, get_unanalyzed_emails, get_db_connection
@@ -173,7 +184,10 @@ async def analyze_single_email(email_id: str):
             
         body = row['body']
         result = _process_email_analysis(email_id, body)
-        return {"status": "success", "data": result}
+        step_msg = f"Email Agent: Analyzed email '{email_id}'"
+        if result and result.get('item_name'):
+             step_msg += f" -> {result.get('item_name')}"
+        return {"status": "success", "data": result, "step": step_msg}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -185,7 +199,10 @@ async def analyze_all_emails():
         for email in unanalyzed:
              try:
                  res = _process_email_analysis(email['id'], email['body'])
-                 results.append({"email_id": email['id'], "status": "success", "data": res})
+                 step_msg = f"Email Agent: Analyzed email '{email['id']}'"
+                 if res and res.get('item_name'):
+                      step_msg += f" -> {res.get('item_name')}"
+                 results.append({"email_id": email['id'], "status": "success", "data": res, "step": step_msg})
              except Exception as e:
                  results.append({"email_id": email['id'], "status": "error", "message": str(e)})
         return {"status": "success", "processed_count": len(results), "results": results}

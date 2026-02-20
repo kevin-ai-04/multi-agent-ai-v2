@@ -29,12 +29,14 @@ import {
     Loader2
 } from "lucide-react";
 import { fetchEmails, sendEmail, syncEmails, EmailItem, analyzeEmail, analyzeAllEmails, getEmailAnalysis } from "@/api/client";
+import { Message } from "@/components/ChatInterface";
 
 interface EmailPageProps {
     folder: string;
+    setMessages?: React.Dispatch<React.SetStateAction<Message[]>>;
 }
 
-export function EmailPage({ folder }: EmailPageProps) {
+export function EmailPage({ folder, setMessages }: EmailPageProps) {
     const [emails, setEmails] = useState<EmailItem[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedEmail, setSelectedEmail] = useState<EmailItem | null>(null);
@@ -111,8 +113,17 @@ export function EmailPage({ folder }: EmailPageProps) {
         e.stopPropagation(); // Prevent opening email detail
         setAnalyzingEmailId(emailId);
         try {
-            await analyzeEmail(emailId);
+            const res = await analyzeEmail(emailId);
             await loadEmails(); // Reload emails to update has_analysis flag
+
+            if (setMessages && res.step) {
+                const newMsg: Message = {
+                    role: "assistant",
+                    content: `Manually triggered background analysis for email ${emailId}.`,
+                    steps: ["Email Agent: Analyzing inbox...", res.step, "Email Agent: Processed 1 emails."]
+                };
+                setMessages(prev => [...prev, newMsg]);
+            }
         } catch (error) {
             alert("Failed to analyze email");
         } finally {
@@ -123,8 +134,20 @@ export function EmailPage({ folder }: EmailPageProps) {
     const handleAnalyzeAll = async () => {
         setIsAnalyzingAll(true);
         try {
-            await analyzeAllEmails();
+            const res = await analyzeAllEmails();
             await loadEmails(); // refresh list
+
+            if (setMessages && res.results) {
+                const stepLogs = res.results.map((r: any) => r.step).filter(Boolean);
+                if (stepLogs.length > 0) {
+                    const newMsg: Message = {
+                        role: "assistant",
+                        content: `Manually triggered background analysis for ${res.processed_count} emails.`,
+                        steps: ["Email Agent: Analyzing inbox...", ...stepLogs, `Email Agent: Processed ${res.processed_count} emails.`]
+                    };
+                    setMessages(prev => [...prev, newMsg]);
+                }
+            }
         } catch (error) {
             alert("Failed to analyze all emails");
         } finally {

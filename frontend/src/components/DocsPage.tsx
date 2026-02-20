@@ -70,7 +70,7 @@ export function DocsPage() {
                             </p>
                             <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
                                 <li><strong>State Management:</strong> Maintains the global context across sub-agents using LangGraph's state dictionary.</li>
-                                <li><strong>Dynamic Routing:</strong> Evaluates incoming prompts to decide if it should call the Email Agent, Query Database, or respond directly.</li>
+                                <li><strong>Dynamic Routing:</strong> Evaluates incoming prompts to decide if it should call the Email Agent (e.g., "analyze inbox"), the Numeric Converter, or respond directly.</li>
                                 <li><strong>Fallback & Escalation:</strong> Handles errors from sub-agents gracefully and prompts the user for clarification if a task is ambiguous.</li>
                             </ul>
                         </Card>
