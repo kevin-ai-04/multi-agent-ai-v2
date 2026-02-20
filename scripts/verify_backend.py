@@ -2,7 +2,8 @@ import sys
 import os
 
 # Add current directory to path
-sys.path.append(os.getcwd())
+# Add project root to path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from backend.graph import app as workflow
 

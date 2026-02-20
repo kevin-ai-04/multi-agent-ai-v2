@@ -1,118 +1,116 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Filter, ArrowUpDown, Star, MoreHorizontal, Mail, ArrowLeft, Reply, Forward, Trash2 } from "lucide-react";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+    Search,
+    RotateCw,
+    Reply,
+    Forward,
+    Trash2,
+    PenSquare,
+    Send as SendIcon,
+    MoreHorizontal,
+    Star,
+    Mail,
+    ArrowLeft,
+    RefreshCw
+} from "lucide-react";
+import { fetchEmails, sendEmail, syncEmails, EmailItem } from "@/api/client";
 
-interface Email {
-    id: number;
-    sender: string;
-    subject: string;
-    preview: string;
-    body: string;
-    time: string;
-    isStarred: boolean;
-    isUnread: boolean;
-    tag: string;
+interface EmailPageProps {
     folder: string;
 }
 
-const dummyEmails: Email[] = [
-    {
-        id: 1,
-        sender: "Sarah Johnson",
-        subject: "Project Update: Q1 Goals",
-        preview: "Here are the updated KPIs for the first quarter given the new...",
-        body: "Hi Team,\n\nHere are the updated KPIs for the first quarter given the new strategic direction. We need to focus on user retention and viral growth loops.\n\nPlease review the attached document and let me know your thoughts by EOD Friday.\n\nBest,\nSarah",
-        time: "10:30 AM",
-        isStarred: true,
-        isUnread: true,
-        tag: "Work",
-        folder: "inbox"
-    },
-    {
-        id: 2,
-        sender: "Tech Daily",
-        subject: "The Future of AI Agents",
-        preview: "In today's newsletter, we dive deep into autonomous agents and...",
-        body: "Welcome to Tech Daily!\n\nIn today's newsletter, we dive deep into autonomous agents and how they are reshaping the software landscape. From coding assistants to fully autonomous procurement bots, the future is agentic.\n\nRead more...",
-        time: "9:15 AM",
-        isStarred: false,
-        isUnread: true,
-        tag: "Newsletter",
-        folder: "inbox"
-    },
-    {
-        id: 3,
-        sender: "Alex Chen",
-        subject: "Lunch tomorrow?",
-        preview: "Hey! Are we still on for trying that new sushi place downtown?",
-        body: "Hey! Are we still on for trying that new sushi place downtown? I heard they have great lunch specials.\n\nLet me know!",
-        time: "Yesterday",
-        isStarred: false,
-        isUnread: false,
-        tag: "Personal",
-        folder: "inbox"
-    },
-    {
-        id: 4,
-        sender: "Cloud Billing",
-        subject: "Invoice #2024-001",
-        preview: "Your monthly subscription has been renewed. View details attached...",
-        body: "Dear Customer,\n\nYour monthly subscription has been renewed. The invoice #2024-001 is attached to this email.\n\nAmount: $29.99\n\nThank you for your business.",
-        time: "Yesterday",
-        isStarred: false,
-        isUnread: false,
-        tag: "Finance",
-        folder: "inbox"
-    },
-    {
-        id: 5,
-        sender: "Me",
-        subject: "Draft: Q2 Proposal",
-        preview: "This is a draft for the upcoming Q2 planning meeting...",
-        body: "This is a draft for the upcoming Q2 planning meeting. Need to add budget projections.",
-        time: "2 days ago",
-        isStarred: false,
-        isUnread: false,
-        tag: "Work",
-        folder: "drafts"
-    },
-    {
-        id: 6,
-        sender: "Me",
-        subject: "Re: Project Update",
-        preview: "Thanks Sarah, received. Will review.",
-        body: "Thanks Sarah, received. Will review and get back to you.",
-        time: "3 days ago",
-        isStarred: false,
-        isUnread: false,
-        tag: "Work",
-        folder: "sent"
-    }
-];
+export function EmailPage({ folder }: EmailPageProps) {
+    const [emails, setEmails] = useState<EmailItem[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedEmail, setSelectedEmail] = useState<EmailItem | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
 
-interface EmailPageProps {
-    folder?: string;
-}
+    // Compose State
+    const [isComposeOpen, setIsComposeOpen] = useState(false);
+    const [composeTo, setComposeTo] = useState("");
+    const [composeSubject, setComposeSubject] = useState("");
+    const [composeBody, setComposeBody] = useState("");
+    const [isSending, setIsSending] = useState(false);
 
-export function EmailPage({ folder = "inbox" }: EmailPageProps) {
-    const [search, setSearch] = useState("");
-    const [filter] = useState("all");
-    const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
+    // Fetch Emails
+    const loadEmails = async () => {
+        setIsLoading(true);
+        try {
+            const data = await fetchEmails(folder);
+            setEmails(data);
+            setSelectedEmail(null); // Deselect on folder change
+        } catch (error) {
+            console.error("Failed to load emails", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-    // Reset selection when folder changes
+    const handleSync = async () => {
+        setIsSyncing(true);
+        try {
+            await syncEmails(folder);
+            await loadEmails();
+        } catch (error) {
+            alert("Failed to sync emails");
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     useEffect(() => {
-        setSelectedEmail(null);
+        loadEmails();
     }, [folder]);
 
-    const filteredEmails = dummyEmails.filter(email =>
-        email.folder === folder &&
-        (email.sender.toLowerCase().includes(search.toLowerCase()) ||
-            email.subject.toLowerCase().includes(search.toLowerCase())) &&
-        (filter === "all" || email.tag.toLowerCase() === filter.toLowerCase())
+    // Handle Send Email
+    const handleSendEmail = async () => {
+        if (!composeTo || !composeBody) {
+            alert("Recipient and message body cannot be empty.");
+            return;
+        }
+        setIsSending(true);
+        try {
+            await sendEmail({
+                to_email: composeTo,
+                subject: composeSubject,
+                body: composeBody
+            });
+            setIsComposeOpen(false);
+            setComposeTo("");
+            setComposeSubject("");
+            setComposeBody("");
+            // Refresh if in sent folder
+            if (folder === "sent") loadEmails();
+            alert("Email sent successfully!");
+        } catch (error) {
+            alert("Failed to send email");
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    const filteredEmails = emails.filter(email =>
+    (email.sender.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        email.subject.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
+    // ----------------------------------------------------------------------
+    // View: Email Detail
+    // ----------------------------------------------------------------------
     if (selectedEmail) {
         return (
             <div className="h-full flex flex-col bg-white/30 dark:bg-black/20 backdrop-blur-md">
@@ -149,19 +147,19 @@ export function EmailPage({ folder = "inbox" }: EmailPageProps) {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
-                                        {selectedEmail.sender[0]}
+                                        {selectedEmail.sender[0]?.toUpperCase()}
                                     </div>
                                     <div>
                                         <div className="font-semibold">{selectedEmail.sender}</div>
-                                        <div className="text-xs text-muted-foreground">{selectedEmail.time}</div>
+                                        <div className="text-xs text-muted-foreground">{selectedEmail.date}</div>
                                     </div>
                                 </div>
-                                <div className="text-xs text-muted-foreground bg-white/10 px-2 py-1 rounded-full border border-white/10">
-                                    {selectedEmail.tag}
+                                <div className="text-xs text-muted-foreground bg-white/10 px-2 py-1 rounded-full border border-white/10 hidden">
+                                    {selectedEmail.folder}
                                 </div>
                             </div>
                         </div>
-                        <div className="prose dark:prose-invert max-w-none text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                        <div className="prose dark:prose-invert max-w-none text-foreground/90 whitespace-pre-wrap leading-relaxed font-sans">
                             {selectedEmail.body}
                         </div>
                     </div>
@@ -170,6 +168,9 @@ export function EmailPage({ folder = "inbox" }: EmailPageProps) {
         );
     }
 
+    // ----------------------------------------------------------------------
+    // View: Email List
+    // ----------------------------------------------------------------------
     return (
         <div className="h-full flex flex-col bg-white/30 dark:bg-black/20 backdrop-blur-md">
             {/* List View Toolbar */}
@@ -180,21 +181,77 @@ export function EmailPage({ folder = "inbox" }: EmailPageProps) {
                         <Input
                             placeholder={`Search ${folder}...`}
                             className="pl-9 bg-white/50 dark:bg-black/50 border-white/20 dark:border-white/10 focus-visible:ring-blue-500/50 transition-all focus:bg-white/80 dark:focus:bg-black/80"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            value={searchQuery}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                         />
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-                        <Filter className="h-4 w-4 mr-2" />
-                        Filter
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleSync}
+                        disabled={isSyncing}
+                        className="text-muted-foreground hover:text-primary"
+                        title="Sync from Server"
+                    >
+                        <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-                        <ArrowUpDown className="h-4 w-4 mr-2" />
-                        Sort
+                    <Button variant="ghost" size="icon" onClick={loadEmails} disabled={isLoading} className="text-muted-foreground hover:text-primary" title="Refresh View">
+                        <RotateCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </Button>
+
+                    {/* Compose Dialog */}
+                    <Dialog open={isComposeOpen} onOpenChange={setIsComposeOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="gap-2 bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20">
+                                <PenSquare className="w-4 h-4" /> Compose
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px] bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-white/10">
+                            <DialogHeader>
+                                <DialogTitle>New Message</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="to" className="text-right">To</Label>
+                                    <Input
+                                        id="to"
+                                        value={composeTo}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setComposeTo(e.target.value)}
+                                        className="col-span-3 bg-white/5"
+                                        placeholder="recipient@example.com"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="subject" className="text-right">Subject</Label>
+                                    <Input
+                                        id="subject"
+                                        value={composeSubject}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setComposeSubject(e.target.value)}
+                                        className="col-span-3 bg-white/5"
+                                        placeholder="Subject"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-4 items-start gap-4">
+                                    <Label htmlFor="message" className="text-right pt-2">Message</Label>
+                                    <Textarea
+                                        id="message"
+                                        value={composeBody}
+                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setComposeBody(e.target.value)}
+                                        className="col-span-3 min-h-[200px] bg-white/5 font-mono text-sm"
+                                        placeholder="Type your message here..."
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button type="submit" onClick={handleSendEmail} disabled={isSending} className="gap-2 bg-blue-600 hover:bg-blue-500">
+                                    {isSending ? 'Sending...' : <><SendIcon className="w-4 h-4" /> Send Email</>}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 
@@ -207,36 +264,32 @@ export function EmailPage({ folder = "inbox" }: EmailPageProps) {
                             onClick={() => setSelectedEmail(email)}
                             className="group px-6 py-4 hover:bg-white/40 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-4"
                         >
-                            <div className="flex-shrink-0">
-                                {email.isUnread && <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]" />}
-                            </div>
-
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center border border-white/10">
                                 <span className="font-semibold text-sm text-gray-600 dark:text-gray-300">
-                                    {email.sender[0]}
+                                    {email.sender[0]?.toUpperCase()}
                                 </span>
                             </div>
 
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between mb-0.5">
-                                    <h4 className={`text-sm truncate ${email.isUnread ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground'}`}>
+                                    <h4 className="text-sm font-semibold text-foreground truncate">
                                         {email.sender}
                                     </h4>
                                     <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
-                                        {email.time}
+                                        {email.date}
                                     </span>
                                 </div>
                                 <h5 className="text-sm font-medium text-foreground/90 truncate">
                                     {email.subject}
                                 </h5>
                                 <p className="text-xs text-muted-foreground truncate opacity-80 group-hover:opacity-100 transition-opacity">
-                                    {email.preview}
+                                    {email.body}
                                 </p>
                             </div>
 
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-yellow-500/20 hover:text-yellow-500">
-                                    <Star className={`h-4 w-4 ${email.isStarred ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                                    <Star className="h-4 w-4" />
                                 </Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
                                     <MoreHorizontal className="h-4 w-4" />
@@ -245,7 +298,14 @@ export function EmailPage({ folder = "inbox" }: EmailPageProps) {
                         </div>
                     ))}
 
-                    {filteredEmails.length === 0 && (
+                    {isLoading && filteredEmails.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground animate-pulse">
+                            <RotateCw className="h-8 w-8 mb-4 animate-spin opacity-50" />
+                            <p className="text-sm">Syncing emails...</p>
+                        </div>
+                    )}
+
+                    {!isLoading && filteredEmails.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                             <Mail className="h-12 w-12 mb-4 opacity-20" />
                             <p className="text-lg font-medium">No emails in {folder}</p>

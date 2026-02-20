@@ -1,6 +1,10 @@
 import os
 import sys
 
+# Add project root to path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+
 def verify_imports():
     print("🧪 Verifying backend imports...")
     try:

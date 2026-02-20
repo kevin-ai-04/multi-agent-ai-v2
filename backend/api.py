@@ -45,3 +45,55 @@ async def chat_endpoint(request: ChatRequest):
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+# --- Email Functionality ---
+from backend.email_service import EmailService
+from backend.database import init_db, get_emails as db_get_emails
+
+# Initialize DB on startup
+# In a real app, use lifespan or startup event, but simple call here works for global scope if import side-effects are managed.
+# Better to put it in a function.
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+email_service = EmailService()
+
+class EmailItem(BaseModel):
+    id: str
+    subject: str
+    sender: str
+    date: str
+    body: str
+    folder: str
+
+class SendEmailRequest(BaseModel):
+    to_email: str
+    subject: str
+    body: str
+
+@app.get("/emails/{folder}", response_model=list[EmailItem])
+async def get_emails(folder: str, limit: int = 20):
+    try:
+        # Read from local DB
+        emails = db_get_emails(folder, limit)
+        return emails
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/emails/sync")
+async def sync_emails(folder: str = "INBOX"):
+    try:
+        # Fetch from IMAP and save to DB
+        emails = email_service.fetch_emails(folder, limit=20)
+        return {"status": "success", "count": len(emails), "message": f"Synced {len(emails)} emails from {folder}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/emails/send")
+async def send_email_endpoint(request: SendEmailRequest):
+    success = email_service.send_email(request.to_email, request.subject, request.body)
+    if success:
+        return {"status": "success", "message": "Email sent successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send email")
