@@ -24,9 +24,11 @@ import {
     Star,
     Mail,
     ArrowLeft,
-    RefreshCw
+    RefreshCw,
+    Wand2,
+    Loader2
 } from "lucide-react";
-import { fetchEmails, sendEmail, syncEmails, EmailItem } from "@/api/client";
+import { fetchEmails, sendEmail, syncEmails, EmailItem, analyzeEmail, analyzeAllEmails, getEmailAnalysis } from "@/api/client";
 
 interface EmailPageProps {
     folder: string;
@@ -45,6 +47,12 @@ export function EmailPage({ folder }: EmailPageProps) {
     const [composeSubject, setComposeSubject] = useState("");
     const [composeBody, setComposeBody] = useState("");
     const [isSending, setIsSending] = useState(false);
+
+    // Analysis State
+    const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
+    const [analyzingEmailId, setAnalyzingEmailId] = useState<string | null>(null);
+    const [analysisData, setAnalysisData] = useState<any | null>(null);
+    const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
 
     // Fetch Emails
     const loadEmails = async () => {
@@ -75,6 +83,54 @@ export function EmailPage({ folder }: EmailPageProps) {
     useEffect(() => {
         loadEmails();
     }, [folder]);
+
+    // Handle Analysis
+    useEffect(() => {
+        if (selectedEmail) {
+            const fetchAnalysis = async () => {
+                setIsLoadingAnalysis(true);
+                setAnalysisData(null);
+                try {
+                    const res = await getEmailAnalysis(selectedEmail.id);
+                    if (res.status === "success") {
+                        setAnalysisData(res.data);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch analysis", e);
+                } finally {
+                    setIsLoadingAnalysis(false);
+                }
+            };
+            fetchAnalysis();
+        } else {
+            setAnalysisData(null);
+        }
+    }, [selectedEmail]);
+
+    const handleAnalyzeEmail = async (emailId: string, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent opening email detail
+        setAnalyzingEmailId(emailId);
+        try {
+            await analyzeEmail(emailId);
+            await loadEmails(); // Reload emails to update has_analysis flag
+        } catch (error) {
+            alert("Failed to analyze email");
+        } finally {
+            setAnalyzingEmailId(null);
+        }
+    };
+
+    const handleAnalyzeAll = async () => {
+        setIsAnalyzingAll(true);
+        try {
+            await analyzeAllEmails();
+            await loadEmails(); // refresh list
+        } catch (error) {
+            alert("Failed to analyze all emails");
+        } finally {
+            setIsAnalyzingAll(false);
+        }
+    };
 
     // Handle Send Email
     const handleSendEmail = async () => {
@@ -159,6 +215,58 @@ export function EmailPage({ folder }: EmailPageProps) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Analysis Card */}
+                        {isLoadingAnalysis && (
+                            <div className="mb-8 p-6 rounded-xl border border-white/10 bg-white/5 animate-pulse flex items-center gap-3">
+                                <Loader2 className="h-5 w-5 animate-spin text-purple-400" />
+                                <span className="text-sm text-foreground/80">Loading Analysis...</span>
+                            </div>
+                        )}
+                        {!isLoadingAnalysis && analysisData && (
+                            <div className="mb-8 overflow-hidden rounded-xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-blue-500/5 backdrop-blur-sm">
+                                <div className="px-6 py-3 border-b border-purple-500/10 bg-purple-500/10 flex items-center gap-2">
+                                    <Wand2 className="h-4 w-4 text-purple-400" />
+                                    <h3 className="text-sm font-semibold text-purple-200">AI Analysis Summary</h3>
+                                </div>
+                                <div className="p-6">
+                                    <p className="text-sm text-foreground/90 mb-4">{analysisData.summary}</p>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Priority</span>
+                                            <span className={`font-medium ${analysisData.priority === 'High' ? 'text-red-400' :
+                                                analysisData.priority === 'Medium' ? 'text-yellow-400' : 'text-green-400'
+                                                }`}>{analysisData.priority}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Item</span>
+                                            <span className="font-medium text-foreground">{analysisData.item_name}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Quantity</span>
+                                            <span className="font-medium text-foreground">{analysisData.quantity} Units</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Vendor</span>
+                                            <span className="font-medium text-foreground">{analysisData.vendor_name || 'N/A'}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Unit Cost</span>
+                                            <span className="font-medium text-foreground">
+                                                {analysisData.item_unit_price ? `$${analysisData.item_unit_price.toLocaleString()}` : 'N/A'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Total Cost</span>
+                                            <span className="font-medium text-foreground">
+                                                {analysisData.total_cost ? `$${analysisData.total_cost.toLocaleString()}` : 'N/A'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="prose dark:prose-invert max-w-none text-foreground/90 whitespace-pre-wrap leading-relaxed font-sans">
                             {selectedEmail.body}
                         </div>
@@ -201,6 +309,18 @@ export function EmailPage({ folder }: EmailPageProps) {
                     <Button variant="ghost" size="icon" onClick={loadEmails} disabled={isLoading} className="text-muted-foreground hover:text-primary" title="Refresh View">
                         <RotateCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </Button>
+
+                    {folder === 'inbox' && (
+                        <Button
+                            variant="outline"
+                            className="gap-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/20 ml-2 shadow-lg shadow-purple-500/10"
+                            onClick={handleAnalyzeAll}
+                            disabled={isAnalyzingAll}
+                        >
+                            {isAnalyzingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                            Analyze All
+                        </Button>
+                    )}
 
                     {/* Compose Dialog */}
                     <Dialog open={isComposeOpen} onOpenChange={setIsComposeOpen}>
@@ -288,6 +408,18 @@ export function EmailPage({ folder }: EmailPageProps) {
                             </div>
 
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {!email.has_analysis && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-purple-500 hover:bg-purple-500/20 hover:text-purple-600"
+                                        onClick={(e) => handleAnalyzeEmail(email.id, e)}
+                                        disabled={analyzingEmailId === email.id}
+                                        title="Analyze Email"
+                                    >
+                                        {analyzingEmailId === email.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                    </Button>
+                                )}
                                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-yellow-500/20 hover:text-yellow-500">
                                     <Star className="h-4 w-4" />
                                 </Button>

@@ -49,22 +49,25 @@ def get_emails(folder, limit=50, offset=0):
     conn = get_db_connection()
     c = conn.cursor()
     
-    # query = 'SELECT * FROM emails WHERE folder = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?'
-    # We use the 'date' string for sorting for now, but ideally we should parse it. 
-    # For IMAP, the ID is usually sequential, so sorting by ID DESC simulates time properly enough for simple sync.
-    # Actually, let's sort by ID (casted to int) DESC to show newest first.
-    
     c.execute('''
-        SELECT * FROM emails 
-        WHERE folder = ? 
-        ORDER BY CAST(id AS INTEGER) DESC 
+        SELECT e.*, CASE WHEN ea.id IS NOT NULL THEN 1 ELSE 0 END as has_analysis
+        FROM emails e 
+        LEFT JOIN email_analysis ea ON e.id = ea.email_id
+        WHERE e.folder = ? 
+        ORDER BY CAST(e.id AS INTEGER) DESC 
         LIMIT ? OFFSET ?
     ''', (folder, limit, offset))
     
     rows = c.fetchall()
     conn.close()
     
-    return [dict(row) for row in rows]
+    result = []
+    for row in rows:
+        r = dict(row)
+        r['has_analysis'] = bool(r['has_analysis'])
+        result.append(r)
+        
+    return result
 
 def get_tables():
     """Returns a list of all table names in the database."""
@@ -133,4 +136,92 @@ def update_table_row(table_name: str, original_row: dict, updated_row: dict):
     finally:
         conn.close()
         
+    return True
+
+# --- Email Analysis Features ---
+
+def get_item_by_name(query: str):
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    # Find matching item by splitting query into words and checking if all exist in name
+    # Helps match "Lithium-ion Battery Pack" to "Lithium-ion Battery Pack 75kWh Model X"
+    words = query.split()
+    if not words:
+        conn.close()
+        return None
+        
+    where_clauses = " AND ".join(["name LIKE ?"] * len(words))
+    params = tuple(f"%{w}%" for w in words)
+    
+    c.execute(f"SELECT * FROM items WHERE {where_clauses}", params)
+    row = c.fetchone()
+    
+    if not row:
+        # Fallback to simple matching
+        c.execute("SELECT * FROM items WHERE name LIKE ?", (f"%{query}%",))
+        row = c.fetchone()
+        
+    conn.close()
+    return dict(row) if row else None
+
+def get_vendor(vendor_id: str):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM vendors WHERE id = ?", (vendor_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def get_unanalyzed_emails():
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT e.* FROM emails e 
+        LEFT JOIN email_analysis ea ON e.id = ea.email_id 
+        WHERE ea.id IS NULL
+        ORDER BY CAST(e.id AS INTEGER) DESC
+    ''')
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def get_email_analysis(email_id: str):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM email_analysis WHERE email_id = ?", (email_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def save_email_analysis(email_id: str, analysis_data: dict, item_data: dict, vendor_data: dict):
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    # Calculate total cost
+    quantity = analysis_data.get('quantity', 0)
+    unit_price = item_data.get('unit_price', 0) if item_data else 0
+    total_cost = quantity * unit_price
+    
+    c.execute('''
+        INSERT OR REPLACE INTO email_analysis (
+            email_id, priority, summary, item_id, item_name, item_unit_price,
+            vendor_id, vendor_name, vendor_email, vendor_phone, total_cost
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        email_id,
+        analysis_data.get('priority'),
+        analysis_data.get('summary'),
+        item_data.get('id') if item_data else None,
+        item_data.get('name') if item_data else analysis_data.get('item_name'),
+        unit_price,
+        vendor_data.get('id') if vendor_data else None,
+        vendor_data.get('name') if vendor_data else None,
+        vendor_data.get('email') if vendor_data else None,
+        None, # vendor_phone doesn't exist in new schema
+        total_cost
+    ))
+    
+    conn.commit()
+    conn.close()
     return True

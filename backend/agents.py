@@ -102,3 +102,63 @@ def orchestrator_router(input_str: str) -> str:
             return "unknown"
     except Exception as e:
         return "unknown"
+
+# --- Email Analysis Feature ---
+from pydantic import BaseModel, Field
+import json
+
+class EmailExtraction(BaseModel):
+    item_name: str = Field(description="The name or description of the requested product/item.")
+    quantity: int = Field(description="The numeric quantity requested.")
+    days_available: int = Field(description="The number of days within which the items are needed.")
+    priority: str = Field(description="Priority: 'High' (within 7 days), 'Medium' (7-30 days), or 'Low' (after 30 days)")
+    summary: str = Field(description="A brief 1-sentence summary of the request.")
+
+email_analyzer_llm = ChatOllama(model=ORCHESTRATOR_MODEL, base_url=OLLAMA_BASE_URL)
+# For older ollama versions or models that don't support structured output perfectly, we'll ask for JSON
+# But Langchain's with_structured_output is preferred if the model supports tool calling. 
+# Mistral supports tool calling, but we can also use JSON mode. Let's try with_structured_output.
+structured_email_analyzer = email_analyzer_llm.with_structured_output(EmailExtraction, method="json_mode")
+
+def analyze_email_content(body: str) -> dict:
+    """
+    Extracts structured procurement data from an email body using the LLM.
+    Priority logic: High (<= 7 days), Medium (7-30 days), Low (> 30 days).
+    """
+    system_prompt = """You are a procurement analysis agent. Extract order details from the following email.
+You must extract the item name, numerical quantity, and the number of days the item is needed within.
+Also provide a 1-sentence summary.
+
+Determine the Priority based strictly on the number of days:
+- 'High' if needed within 7 days (or 7 days exactly).
+- 'Medium' if needed between 8 and 30 days.
+- 'Low' if needed after 30 days.
+
+Respond ONLY with a valid JSON object matching the requested schema.
+"""
+    messages = [
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=f"Email Body:\n{body}")
+    ]
+    try:
+        # Since we initialized with method="json_mode", we rely on the schema being passed.
+        # However, some ChatOllama setups require the schema as tools. 
+        # For safety and backward compatibility, we will just prompt for JSON and parse it if structured output fails.
+        response = email_analyzer_llm.invoke([
+            SystemMessage(content=system_prompt + "\nSchema: {\"item_name\": \"str\", \"quantity\": int, \"days_available\": int, \"priority\": \"str\", \"summary\": \"str\"}\nReturn strictly raw JSON."),
+            HumanMessage(content=body)
+        ])
+        content = response.content.strip()
+        # Remove markdown code blocks if present
+        if content.startswith("```json"):
+             content = content[7:-3]
+        elif content.startswith("```"):
+             content = content[3:-3]
+             
+        data = json.loads(content)
+        # Validate and return
+        extracted = EmailExtraction(**data)
+        return extracted.model_dump()
+    except Exception as e:
+        print(f"Error extracting email data: {e}. Raw response: {response.content if 'response' in locals() else 'None'}")
+        return None

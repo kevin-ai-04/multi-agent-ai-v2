@@ -132,3 +132,73 @@ async def api_update_table_row(table_name: str, request: UpdateRowRequest):
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- Email Analysis API ---
+from backend.agents import analyze_email_content
+from backend.database import get_item_by_name, get_vendor, save_email_analysis, get_email_analysis, get_unanalyzed_emails, get_db_connection
+
+def _process_email_analysis(email_id: str, body: str):
+    # Call LLM
+    extraction = analyze_email_content(body)
+    if not extraction:
+        raise ValueError("Failed to extract structured data from email.")
+        
+    item_name = extraction.get('item_name', '')
+    
+    # 1. Find matching item
+    item_data = get_item_by_name(item_name)
+    vendor_data = None
+    
+    # 2. Get vendor if item found
+    if item_data and item_data.get('default_vendor_id'):
+        vendor_data = get_vendor(item_data['default_vendor_id'])
+            
+    # 3. Save to database
+    save_email_analysis(email_id, extraction, item_data, vendor_data)
+    
+    # 4. Return the saved data
+    return get_email_analysis(email_id)
+
+@app.post("/emails/{email_id}/analyze")
+async def analyze_single_email(email_id: str):
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("SELECT body FROM emails WHERE id = ?", (email_id,))
+        row = c.fetchone()
+        conn.close()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="Email not found")
+            
+        body = row['body']
+        result = _process_email_analysis(email_id, body)
+        return {"status": "success", "data": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/emails/analyze_all")
+async def analyze_all_emails():
+    try:
+        unanalyzed = get_unanalyzed_emails()
+        results = []
+        for email in unanalyzed:
+             try:
+                 res = _process_email_analysis(email['id'], email['body'])
+                 results.append({"email_id": email['id'], "status": "success", "data": res})
+             except Exception as e:
+                 results.append({"email_id": email['id'], "status": "error", "message": str(e)})
+        return {"status": "success", "processed_count": len(results), "results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/emails/{email_id}/analysis")
+async def get_email_analysis_endpoint(email_id: str):
+    try:
+        data = get_email_analysis(email_id)
+        if data:
+            return {"status": "success", "data": data}
+        else:
+            return {"status": "not_found"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
