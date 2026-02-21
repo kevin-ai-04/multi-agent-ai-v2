@@ -19,6 +19,7 @@ export interface EmailItem {
     body: string;
     folder: string;
     has_analysis?: boolean;
+    priority?: string;
 }
 
 export interface SendEmailRequest {

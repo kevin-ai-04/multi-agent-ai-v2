@@ -26,8 +26,20 @@ import {
     ArrowLeft,
     RefreshCw,
     Wand2,
-    Loader2
+    Loader2,
+    ArrowUpDown,
+    Filter,
 } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
 import { fetchEmails, sendEmail, syncEmails, EmailItem, analyzeEmail, analyzeAllEmails, getEmailAnalysis } from "@/api/client";
 import { Message } from "@/components/ChatInterface";
 
@@ -55,6 +67,8 @@ export function EmailPage({ folder, setMessages }: EmailPageProps) {
     const [analyzingEmailId, setAnalyzingEmailId] = useState<string | null>(null);
     const [analysisData, setAnalysisData] = useState<any | null>(null);
     const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+    const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+    const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
     // Fetch Emails
     const loadEmails = async () => {
@@ -182,10 +196,31 @@ export function EmailPage({ folder, setMessages }: EmailPageProps) {
         }
     };
 
-    const filteredEmails = emails.filter(email =>
-    (email.sender.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        email.subject.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredEmails = emails
+        .filter(email => {
+            // Search Query
+            const matchesSearch =
+                email.sender.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                email.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                email.body.toLowerCase().includes(searchQuery.toLowerCase());
+
+            // Priority Filter
+            if (priorityFilter === "all") return matchesSearch;
+
+            const emailPriority = email.priority || "none";
+            return matchesSearch && emailPriority.toLowerCase() === priorityFilter.toLowerCase();
+        })
+        .sort((a, b) => {
+            // Date Sorting
+            const dateA = new Date(a.date).getTime();
+            const dateB = new Date(b.date).getTime();
+
+            if (sortOrder === "newest") {
+                return dateB - dateA;
+            } else {
+                return dateA - dateB;
+            }
+        });
 
     // ----------------------------------------------------------------------
     // View: Email Detail
@@ -340,6 +375,49 @@ export function EmailPage({ folder, setMessages }: EmailPageProps) {
                     <Button variant="ghost" size="icon" onClick={loadEmails} disabled={isLoading} className="text-muted-foreground hover:text-primary" title="Refresh View">
                         <RotateCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </Button>
+
+                    <div className="h-4 w-[1px] bg-white/20 mx-2" />
+
+                    {/* Sorting & Filtering Controls */}
+                    <div className="flex items-center gap-2 mr-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 h-9">
+                                    <ArrowUpDown className="w-3.5 h-3.5" />
+                                    <span className="text-xs font-medium">Sort</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-white/10">
+                                <DropdownMenuLabel>Sort by Date</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuRadioGroup value={sortOrder} onValueChange={(v) => setSortOrder(v as any)}>
+                                    <DropdownMenuRadioItem value="newest" className="text-sm">Newest First</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="oldest" className="text-sm">Oldest First</DropdownMenuRadioItem>
+                                </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className={`gap-2 border-white/10 hover:bg-white/10 h-9 ${priorityFilter !== 'all' ? 'bg-blue-500/10 text-blue-500' : 'bg-white/5'}`}>
+                                    <Filter className="w-3.5 h-3.5" />
+                                    <span className="text-xs font-medium">Priority</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-white/10">
+                                <DropdownMenuLabel>Filter by Priority</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuRadioGroup value={priorityFilter} onValueChange={setPriorityFilter}>
+                                    <DropdownMenuRadioItem value="all" className="text-sm">All Emails</DropdownMenuRadioItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuRadioItem value="High" className="text-sm text-red-500">High Priority</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="Medium" className="text-sm text-yellow-500">Medium Priority</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="Low" className="text-sm text-green-500">Low Priority</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="none" className="text-sm text-muted-foreground">None / Unanalyzed</DropdownMenuRadioItem>
+                                </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
 
                     {folder === 'inbox' && (
                         <Button

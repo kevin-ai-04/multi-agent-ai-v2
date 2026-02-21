@@ -50,7 +50,9 @@ def get_emails(folder, limit=50, offset=0):
     c = conn.cursor()
     
     c.execute('''
-        SELECT e.*, CASE WHEN ea.id IS NOT NULL THEN 1 ELSE 0 END as has_analysis
+        SELECT e.*, 
+               CASE WHEN ea.id IS NOT NULL THEN 1 ELSE 0 END as has_analysis,
+               ea.priority
         FROM emails e 
         LEFT JOIN email_analysis ea ON e.id = ea.email_id
         WHERE e.folder = ? 

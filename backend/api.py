@@ -66,6 +66,8 @@ class EmailItem(BaseModel):
     date: str
     body: str
     folder: str
+    has_analysis: bool = False
+    priority: str | None = None
 
 class SendEmailRequest(BaseModel):
     to_email: str
