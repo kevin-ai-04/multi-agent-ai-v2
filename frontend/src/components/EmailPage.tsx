@@ -46,11 +46,25 @@ import { Message } from "@/components/ChatInterface";
 interface EmailPageProps {
     folder: string;
     setMessages?: React.Dispatch<React.SetStateAction<Message[]>>;
+    searchQuery: string;
+    setSearchQuery: (val: string) => void;
+    priorityFilter: string;
+    setPriorityFilter: (val: string) => void;
+    sortOrder: "newest" | "oldest";
+    setSortOrder: (val: "newest" | "oldest") => void;
 }
 
-export function EmailPage({ folder, setMessages }: EmailPageProps) {
+export function EmailPage({
+    folder,
+    setMessages,
+    searchQuery,
+    setSearchQuery,
+    priorityFilter,
+    setPriorityFilter,
+    sortOrder,
+    setSortOrder
+}: EmailPageProps) {
     const [emails, setEmails] = useState<EmailItem[]>([]);
-    const [searchQuery, setSearchQuery] = useState("");
     const [selectedEmail, setSelectedEmail] = useState<EmailItem | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -67,8 +81,6 @@ export function EmailPage({ folder, setMessages }: EmailPageProps) {
     const [analyzingEmailId, setAnalyzingEmailId] = useState<string | null>(null);
     const [analysisData, setAnalysisData] = useState<any | null>(null);
     const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
-    const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
-    const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
     // Fetch Emails
     const loadEmails = async () => {

@@ -26,6 +26,11 @@ function App() {
     const [activeView, setActiveView] = useState<"home" | "emails" | "settings" | "dashboard" | "docs" | "database">("home")
     const [emailFolder, setEmailFolder] = useState("inbox")
 
+    // Email Filter State (Lifted for LLM control)
+    const [searchQuery, setSearchQuery] = useState("")
+    const [priorityFilter, setPriorityFilter] = useState("all")
+    const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest")
+
     // Chat Session State (Lifted for persistence)
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState("")
@@ -36,6 +41,20 @@ function App() {
         sent: "Sent",
         drafts: "Drafts",
         trash: "Trash"
+    }
+
+    const handleUIAction = (action: { action_type: string; params: any }) => {
+        console.log("LLM-Triggered UI Action:", action);
+        if (action.action_type === "redirect") {
+            if (action.params.view) {
+                setActiveView(action.params.view as any);
+            }
+        } else if (action.action_type === "set_filter") {
+            const { search, priority, sort } = action.params;
+            if (search !== undefined) setSearchQuery(search);
+            if (priority !== undefined) setPriorityFilter(priority);
+            if (sort !== undefined) setSortOrder(sort as any);
+        }
     }
 
     return (
@@ -104,6 +123,7 @@ function App() {
                                 setInput={setInput}
                                 isLoading={isLoading}
                                 setIsLoading={setIsLoading}
+                                onUIAction={handleUIAction}
                             />
                         )}
 
@@ -111,7 +131,18 @@ function App() {
                         {activeView === 'dashboard' && <Dashboard messages={messages} isLoading={isLoading} />}
 
                         {/* Email View */}
-                        {activeView === 'emails' && <EmailPage folder={emailFolder} setMessages={setMessages} />}
+                        {activeView === 'emails' && (
+                            <EmailPage
+                                folder={emailFolder}
+                                setMessages={setMessages}
+                                searchQuery={searchQuery}
+                                setSearchQuery={setSearchQuery}
+                                priorityFilter={priorityFilter}
+                                setPriorityFilter={setPriorityFilter}
+                                sortOrder={sortOrder}
+                                setSortOrder={setSortOrder}
+                            />
+                        )}
 
                         {/* Docs View */}
                         {activeView === 'docs' && <DocsPage />}
@@ -143,6 +174,7 @@ function App() {
                                     setInput={setInput}
                                     isLoading={isLoading}
                                     setIsLoading={setIsLoading}
+                                    onUIAction={handleUIAction}
                                 />
                             </div>
                         </div>

@@ -22,6 +22,7 @@ interface ChatInterfaceProps {
     setInput: (value: string) => void;
     isLoading: boolean;
     setIsLoading: (loading: boolean) => void;
+    onUIAction?: (action: { action_type: string; params: any }) => void;
 }
 
 export function ChatInterface({
@@ -32,7 +33,8 @@ export function ChatInterface({
     input,
     setInput,
     isLoading,
-    setIsLoading
+    setIsLoading,
+    onUIAction
 }: ChatInterfaceProps) {
     const [currentSteps, setCurrentSteps] = useState<string[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -69,6 +71,11 @@ export function ChatInterface({
                 content: response.response_text,
                 steps: response.steps
             }]);
+
+            // Handle UI Actions from LLM
+            if (response.ui_actions && onUIAction) {
+                response.ui_actions.forEach(action => onUIAction(action));
+            }
             setCurrentSteps([]);
 
         } catch (error) {

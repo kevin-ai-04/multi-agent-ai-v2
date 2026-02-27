@@ -18,10 +18,12 @@ class ChatRequest(BaseModel):
     input_text: str
     agent_a_enabled: bool = True
     agent_b_enabled: bool = True
+    agent_email_enabled: bool = True
 
 class ChatResponse(BaseModel):
     response_text: str
     steps: list[str]
+    ui_actions: list[dict] = []
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
@@ -29,14 +31,20 @@ async def chat_endpoint(request: ChatRequest):
         inputs = {
             "input_text": request.input_text,
             "agent_a_enabled": request.agent_a_enabled,
-            "agent_b_enabled": request.agent_b_enabled
+            "agent_b_enabled": request.agent_b_enabled,
+            "agent_email_enabled": request.agent_email_enabled,
+            "steps": [],
+            "ui_actions": [],
+            "routing_decision": "unknown",
+            "output_text": ""
         }
         
         result = workflow.invoke(inputs)
         
         return ChatResponse(
             response_text=result.get("output_text", "Error processing request."),
-            steps=result.get("steps", [])
+            steps=result.get("steps", []),
+            ui_actions=result.get("ui_actions", [])
         )
             
     except Exception as e:

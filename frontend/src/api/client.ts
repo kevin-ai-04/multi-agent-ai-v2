@@ -9,6 +9,7 @@ interface ChatRequest {
 interface ChatResponse {
     response_text: string;
     steps: string[];
+    ui_actions?: { action_type: string; params: any }[];
 }
 
 export interface EmailItem {

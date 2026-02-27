@@ -12,16 +12,27 @@ class AgentState(TypedDict):
     agent_a_enabled: bool
     agent_b_enabled: bool
     agent_email_enabled: bool
+    ui_actions: list[dict]
 
 # 2. Define Nodes
 def orchestrator_node(state: AgentState):
     """
     Analyzes input and decides where to route.
     """
-    decision = orchestrator_router(state["input_text"])
+    input_text = state.get("input_text", "")
+    orchestration = orchestrator_router(input_text)
+    decision = orchestration.decision
+    ui_actions = [action.model_dump() for action in orchestration.ui_actions]
+    chat_response = orchestration.chat_response
+    
+    steps = list(state.get("steps", []))
+    steps.append(f"Orchestrator: Analyzed input. Routing to {decision}.")
+    
     return {
         "routing_decision": decision, 
-        "steps": state.get("steps", []) + [f"Orchestrator: Analyzed input. Routing to {decision}."]
+        "ui_actions": ui_actions,
+        "output_text": chat_response if chat_response else state.get("output_text", ""),
+        "steps": steps
     }
 
 def agent_num2text_node(state: AgentState):
@@ -29,9 +40,11 @@ def agent_num2text_node(state: AgentState):
     Executes Num2Text conversion.
     """
     result = convert_num_to_text(state["input_text"])
+    steps = list(state.get("steps", []))
+    steps.append(f"Agent A (Num2Text): Converted '{state['input_text']}' to '{result}'.")
     return {
         "output_text": result,
-        "steps": state.get("steps", []) + [f"Agent A (Num2Text): Converted '{state['input_text']}' to '{result}'."]
+        "steps": steps
     }
 
 def agent_text2num_node(state: AgentState):
@@ -39,9 +52,11 @@ def agent_text2num_node(state: AgentState):
     Executes Text2Num conversion.
     """
     result = convert_text_to_num(state["input_text"])
+    steps = list(state.get("steps", []))
+    steps.append(f"Agent B (Text2Num): Converted '{state['input_text']}' to '{result}'.")
     return {
         "output_text": result,
-        "steps": state.get("steps", []) + [f"Agent B (Text2Num): Converted '{state['input_text']}' to '{result}'."]
+        "steps": steps
     }
 
 def agent_email_node(state: AgentState):
@@ -89,11 +104,31 @@ def agent_email_node(state: AgentState):
 
 def unknown_node(state: AgentState):
     """
-    Handles unclear input.
+    Handles unclear input or pure UI navigation requests.
     """
+    steps = list(state.get("steps", []))
+    output_text = state.get("output_text", "")
+    
+    # If orchestrator provided a chat response, use it
+    if isinstance(output_text, str) and output_text and not output_text.startswith("I'm sorry, I couldn't determine"):
+        steps.append("Orchestrator: Direct response provided.")
+        return {
+            "output_text": output_text,
+            "steps": steps
+        }
+        
+    ui_actions = state.get("ui_actions", [])
+    if ui_actions:
+        steps.append("Orchestrator: Performed UI actions. Request fulfilled.")
+        return {
+            "output_text": "I've updated your view based on your request.",
+            "steps": steps
+        }
+    
+    steps.append("Orchestrator: Could not determine intent. Execution stopped.")
     return {
         "output_text": "I'm sorry, I couldn't determine the intent. Please try asking about your inbox or converting a number.",
-        "steps": state.get("steps", []) + ["Orchestrator: Could not determine intent. Execution stopped."]
+        "steps": steps
     }
 
 def service_unavailable_node(state: AgentState):
