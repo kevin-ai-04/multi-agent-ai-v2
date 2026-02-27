@@ -211,6 +211,15 @@ def get_email_analysis(email_id: str):
     conn.close()
     return dict(row) if row else None
 
+def get_all_email_analyses():
+    """Returns all email_analysis rows for standalone compliance checking."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM email_analysis ORDER BY id DESC")
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
 def save_email_analysis(email_id: str, analysis_data: dict, item_data: dict, vendor_data: dict):
     conn = get_db_connection()
     c = conn.cursor()
@@ -242,3 +251,90 @@ def save_email_analysis(email_id: str, analysis_data: dict, item_data: dict, ven
     conn.commit()
     conn.close()
     return True
+
+
+# --- Order Management ---
+
+def create_order(item_id: int, vendor_id: int, qty: int, amount: float) -> int:
+    """Inserts a DRAFT order. Returns the new order id."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            "INSERT INTO orders (item_id, qty, vendor_id, amount, status) VALUES (?, ?, ?, ?, 'DRAFT')",
+            (item_id, qty, vendor_id, amount)
+        )
+        conn.commit()
+        return c.lastrowid
+    finally:
+        conn.close()
+
+
+def get_orders():
+    """Returns all orders joined with item and vendor info."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT o.*, i.name AS item_name, i.unit_price,
+               v.name AS vendor_name, v.email AS vendor_email
+        FROM orders o
+        LEFT JOIN items i ON o.item_id = i.id
+        LEFT JOIN vendors v ON o.vendor_id = v.id
+        ORDER BY o.id DESC
+    """)
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+def get_order_by_id(order_id: int):
+    """Returns a single order with full item and vendor details."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT o.*, i.name AS item_name, i.unit_price,
+               v.name AS vendor_name, v.email AS vendor_email
+        FROM orders o
+        LEFT JOIN items i ON o.item_id = i.id
+        LEFT JOIN vendors v ON o.vendor_id = v.id
+        WHERE o.id = ?
+    """, (order_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def approve_order(order_id: int) -> bool:
+    """Approves an order and deducts cost from the most recent budget."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT amount FROM orders WHERE id = ?", (order_id,))
+        row = c.fetchone()
+        if not row:
+            raise ValueError(f"Order {order_id} not found.")
+        amount = row['amount']
+        c.execute("UPDATE orders SET status = 'APPROVED' WHERE id = ?", (order_id,))
+        c.execute("SELECT dept, period FROM budgets ORDER BY period DESC LIMIT 1")
+        budget = c.fetchone()
+        if budget:
+            c.execute(
+                "UPDATE budgets SET used_amount = used_amount + ? WHERE dept = ? AND period = ?",
+                (amount, budget['dept'], budget['period'])
+            )
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def reject_order(order_id: int) -> bool:
+    """Rejects an order."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        c.execute("UPDATE orders SET status = 'REJECTED' WHERE id = ?", (order_id,))
+        conn.commit()
+        return True
+    finally:
+        conn.close()

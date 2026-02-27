@@ -105,7 +105,7 @@ class UIAction(BaseModel):
     params: dict = Field(default_factory=dict, description="The parameters for the UI action (e.g., view name for redirect, filter values for set_filter).")
 
 class OrchestrationResponse(BaseModel):
-    decision: Literal["num2text", "text2num", "email", "unknown"] = Field(description="The routing decision for the orchestrator.")
+    decision: Literal["num2text", "text2num", "email", "compliance", "pdf", "unknown"] = Field(description="The routing decision for the orchestrator.")
     ui_actions: List[UIAction] = Field(default_factory=list, description="A list of UI actions to trigger based on user intent.")
     chat_response: Optional[str] = Field(default=None, description="A direct conversational response for greetings or banter.")
 
@@ -117,7 +117,7 @@ def orchestrator_router(input_str: str) -> OrchestrationResponse:
     prompt = f"""You are an AI orchestrator. 
     You MUST respond with a JSON object exactly matching this structure:
     {{
-      "decision": "num2text" | "text2num" | "email" | "unknown",
+      "decision": "num2text" | "text2num" | "email" | "compliance" | "pdf" | "unknown",
       "ui_actions": [
         {{ "action_type": "redirect" | "set_filter" | "popup", "params": {{ "view": "...", "search": "...", "priority": "High"|"Medium"|"Low", "sort": "newest"|"oldest" }} }}
       ],
@@ -128,18 +128,29 @@ def orchestrator_router(input_str: str) -> OrchestrationResponse:
     - 'decision': If input is about numbers:
         - Use 'num2text' if input has DIGITS (e.g. '42').
         - Use 'text2num' if input has WORDS (e.g. 'forty two').
-    - 'decision': Only set to 'email' if the user wants to ANALYZE, SUMMARIZE, or CHECK for specific email content.
-    - 'decision': For anything else (searching emails, greetings, banter, navigation, or questions about capabilities), use 'unknown'.
-    - 'chat_response': If the user is just engaging in general conversation, greetings, banter, or asking what you can do, provide a helpful and friendly reply here.
-    - UI Actions:
-        - DO NOT include `ui_actions` for general greetings, banter, or meta-questions (like "what can you do?").
-        - For viewing/searching: use 'redirect' with view: 'emails'.
-        - For specific sorting/filtering: use 'set_filter' with params 'search', 'priority', or 'sort'.
+    - 'decision': Set to 'email' ONLY for active processing: ANALYZE, PROCESS, SCAN emails for data. Keywords: analyze, analyse, process, scan inbox, extract orders.
+    - 'decision': Set to 'compliance' for running compliance/gatekeeper checks on already-analyzed emails. Keywords: compliance, gatekeeper, run checks, check compliance, verify orders.
+    - 'decision': Set to 'pdf' if user wants to generate or create a PDF/PO/purchase order for a specific order. The input MUST contain a number (the order ID). Keywords: generate pdf, create pdf, generate po, create purchase order, make pdf.
+    - 'decision': IMPORTANT — when decision is 'email', 'compliance', or 'pdf', set ui_actions to [] (background pipeline, no navigation).
+    - 'decision': For navigation/viewing (show, list, open, go to inbox, display), use 'unknown' + ui_actions redirect.
+    - 'decision': For greetings/banter/capability questions, use 'unknown' + chat_response.
+    - UI Actions (only for 'unknown' decision):
+        - For viewing/navigating to emails: use 'redirect' with view: 'emails'.
+        - For specific filtering: use 'set_filter' with params 'search', 'priority', or 'sort'.
+        - For greetings/banter/meta-questions: NO ui_actions, just chat_response.
     
     EXAMPLES:
-    - User: "show me high priority emails": {{"decision": "unknown", "chat_response": null, "ui_actions": [{{"action_type": "redirect", "params": {{"view": "emails"}}}}, {{"action_type": "set_filter", "params": {{"priority": "High"}}}} ]}}
-    - User: "what can you do?": {{"decision": "unknown", "chat_response": "I can help with email analysis and number conversion...", "ui_actions": []}}
-    - User: "general conversation": {{"decision": "unknown", "chat_response": "I am your procurement assistant. How can I help you today?", "ui_actions": []}}
+    - User: "analyze emails": {{"decision": "email", "chat_response": null, "ui_actions": []}}
+    - User: "process my inbox": {{"decision": "email", "chat_response": null, "ui_actions": []}}
+    - User: "run compliance checks": {{"decision": "compliance", "chat_response": null, "ui_actions": []}}
+    - User: "check compliance": {{"decision": "compliance", "chat_response": null, "ui_actions": []}}
+    - User: "run gatekeeper": {{"decision": "compliance", "chat_response": null, "ui_actions": []}}
+    - User: "generate pdf for order 14": {{"decision": "pdf", "chat_response": null, "ui_actions": []}}
+    - User: "create purchase order 5": {{"decision": "pdf", "chat_response": null, "ui_actions": []}}
+    - User: "make pdf order 20": {{"decision": "pdf", "chat_response": null, "ui_actions": []}}
+    - User: "show me high priority emails": {{"decision": "unknown", "chat_response": null, "ui_actions": [{{"action_type": "redirect", "params": {{"view": "emails"}}}}, {{"action_type": "set_filter", "params": {{"priority": "High"}}}}]}}
+    - User: "go to inbox": {{"decision": "unknown", "chat_response": null, "ui_actions": [{{"action_type": "redirect", "params": {{"view": "emails"}}}}]}}
+    - User: "what can you do?": {{"decision": "unknown", "chat_response": "I can analyze procurement emails, run compliance checks, generate PDFs, navigate your inbox, and convert numbers.", "ui_actions": []}}
     - User: "convert forty two": {{"decision": "text2num", "chat_response": null, "ui_actions": []}}
     
     User Input: "{input_str}"
@@ -170,9 +181,11 @@ def orchestrator_router(input_str: str) -> OrchestrationResponse:
                     break
         
         # Standardize decision values
-        valid_decisions = ["num2text", "text2num", "email", "unknown"]
+        valid_decisions = ["num2text", "text2num", "email", "compliance", "pdf", "unknown"]
         if data["decision"] not in valid_decisions:
-            if "email" in str(data["decision"]).lower(): data["decision"] = "email"
+            if "pdf" in str(data["decision"]).lower(): data["decision"] = "pdf"
+            elif "email" in str(data["decision"]).lower(): data["decision"] = "email"
+            elif "compliance" in str(data["decision"]).lower(): data["decision"] = "compliance"
             elif "num" in str(data["decision"]).lower(): data["decision"] = "num2text" 
             else: data["decision"] = "unknown"
             
@@ -240,3 +253,290 @@ Respond ONLY with a valid JSON object matching the requested schema.
     except Exception as e:
         print(f"Error extracting email data: {e}. Raw response: {response.content if 'response' in locals() else 'None'}")
         return None
+
+
+# ─────────────────────────────────────────────
+# COMPLIANCE / GATEKEEPER
+# ─────────────────────────────────────────────
+
+def run_gatekeeper_checks(analysis: dict) -> dict:
+    """
+    Rule-based compliance checks against inventory, budgets, and policies.
+    Returns: { 'passed': bool, 'failures': [str], 'warnings': [str] }
+    """
+    from backend.database import get_db_connection
+
+    failures, warnings = [], []
+    item_id    = analysis.get('item_id')
+    vendor_id  = analysis.get('vendor_id')
+    total_cost = analysis.get('total_cost', 0) or 0
+    quantity   = analysis.get('quantity', 0) or 0
+    item_name  = analysis.get('item_name', 'Unknown Item')
+
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        # ── Check 1: Inventory ──────────────────────────
+        if item_id:
+            c.execute("SELECT qty_on_hand, min_qty, max_capacity FROM inventory WHERE item_id = ?", (item_id,))
+            inv = c.fetchone()
+            if inv:
+                if inv['qty_on_hand'] > inv['min_qty']:
+                    warnings.append(
+                        f"Inventory: Stock for '{item_name}' is {inv['qty_on_hand']} units "
+                        f"(above min threshold of {inv['min_qty']}). Order may not be urgent."
+                    )
+                projected = inv['qty_on_hand'] + quantity
+                if inv['max_capacity'] > 0 and projected > inv['max_capacity']:
+                    failures.append(
+                        f"Inventory: Ordering {quantity} units would exceed max capacity "
+                        f"({projected} > {inv['max_capacity']})."
+                    )
+            else:
+                warnings.append(f"Inventory: No record found for item_id={item_id}.")
+        else:
+            warnings.append("Inventory: Item not found in catalog — check skipped.")
+
+        # ── Check 2: Budget ─────────────────────────────
+        c.execute("SELECT dept, period, limit_amount, used_amount FROM budgets ORDER BY period DESC LIMIT 1")
+        budget = c.fetchone()
+        if budget:
+            remaining = budget['limit_amount'] - budget['used_amount']
+            if total_cost > remaining:
+                failures.append(
+                    f"Budget: Order cost ${total_cost:,.2f} exceeds remaining budget "
+                    f"${remaining:,.2f} for dept '{budget['dept']}' ({budget['period']})."
+                )
+            else:
+                warnings.append(
+                    f"Budget: ${total_cost:,.2f} within budget. Remaining after order: "
+                    f"${remaining - total_cost:,.2f} ({budget['dept']}, {budget['period']})."
+                )
+        else:
+            warnings.append("Budget: No budget record found — check skipped.")
+
+        # ── Check 3: Policies ───────────────────────────
+        c.execute("SELECT value FROM policies WHERE key = 'max_single_order_amount'")
+        row = c.fetchone()
+        if row and total_cost > float(row['value']):
+            failures.append(
+                f"Policy: Order amount ${total_cost:,.2f} exceeds single-order limit of ${float(row['value']):,.2f}."
+            )
+
+        c.execute("SELECT value FROM policies WHERE key = 'min_vendor_score'")
+        row = c.fetchone()
+        if row and vendor_id:
+            min_score = float(row['value'])
+            c.execute("SELECT name, ext_score, approved FROM vendors WHERE id = ?", (vendor_id,))
+            vendor = c.fetchone()
+            if vendor:
+                if not vendor['approved']:
+                    failures.append(f"Policy: Vendor '{vendor['name']}' is not approved.")
+                if vendor['ext_score'] < min_score:
+                    failures.append(
+                        f"Policy: Vendor '{vendor['name']}' score {vendor['ext_score']} "
+                        f"is below minimum {min_score}."
+                    )
+    finally:
+        conn.close()
+
+    return {'passed': len(failures) == 0, 'failures': failures, 'warnings': warnings}
+
+
+# LLM instance for compliance explanation
+compliance_llm = ChatOllama(model=ORCHESTRATOR_MODEL, base_url=OLLAMA_BASE_URL)
+
+def explain_compliance_result(analysis: dict, gate_result: dict) -> str:
+    """
+    Uses LLM to explain compliance result in plain English with recommendations.
+    Returns a user-friendly narrative string.
+    """
+    passed     = gate_result['passed']
+    failures   = gate_result.get('failures', [])
+    warnings   = gate_result.get('warnings', [])
+    item_name  = analysis.get('item_name', 'the requested item')
+    total_cost = analysis.get('total_cost', 0) or 0
+    priority   = analysis.get('priority', 'Unknown')
+
+    status_str = "PASSED" if passed else "FAILED"
+    failures_str = "\n".join(f"- {f}" for f in failures) if failures else "None"
+    warnings_str = "\n".join(f"- {w}" for w in warnings) if warnings else "None"
+
+    prompt = f"""You are a procurement compliance officer. 
+Explain the compliance result for a purchase request clearly and professionally.
+
+REQUEST DETAILS:
+- Item: {item_name}
+- Total Cost: ${total_cost:,.2f}
+- Priority: {priority}
+
+COMPLIANCE STATUS: {status_str}
+FAILURES:
+{failures_str}
+WARNINGS:
+{warnings_str}
+
+Write a concise 2-4 sentence explanation:
+1. State whether the request passed or failed, and why.
+2. If failed, give a clear recommendation (e.g., split order, switch vendor, request budget override).
+3. If passed with warnings, briefly mention them.
+Keep it professional and direct. Do NOT use bullet points."""
+
+    try:
+        response = compliance_llm.invoke([
+            SystemMessage(content="You are a professional procurement compliance officer. Respond in plain English only, no JSON, no bullet points."),
+            HumanMessage(content=prompt)
+        ])
+        return response.content.strip()
+    except Exception as e:
+        # Fallback to raw summary if LLM fails
+        if passed:
+            return f"Compliance passed for '{item_name}'. {' '.join(warnings)}"
+        else:
+            return f"Compliance failed for '{item_name}': {' '.join(failures)}"
+
+
+# ─────────────────────────────────────────────
+# PDF PURCHASE ORDER GENERATION
+# ─────────────────────────────────────────────
+
+po_llm = ChatOllama(model=ORCHESTRATOR_MODEL, base_url=OLLAMA_BASE_URL)
+
+def generate_po_content(order: dict) -> str:
+    """
+    Uses LLM to generate the formal text content of a Purchase Order.
+    order dict should contain: item_name, quantity, unit_price, total_cost,
+                               vendor_name, vendor_email, order_id, priority, created_at
+    """
+    prompt = f"""You are a professional procurement officer. Write a formal Purchase Order document.
+
+ORDER DETAILS:
+- PO Number: {order.get('order_id', 'N/A')}
+- Date: {order.get('created_at', 'Today')}
+- Item: {order.get('item_name', 'N/A')}
+- Quantity: {order.get('quantity', 'N/A')} units
+- Unit Price: ${order.get('unit_price', 0):,.2f}
+- Total Amount: ${order.get('total_cost', 0):,.2f}
+- Vendor: {order.get('vendor_name', 'N/A')}
+- Vendor Email: {order.get('vendor_email', 'N/A')}
+- Priority: {order.get('priority', 'Standard')}
+- Company: Aurora Industries
+
+Write the body of a professional Purchase Order letter addressed to the vendor.
+Include: greeting, order specifics, expected delivery urgency based on priority, payment terms (Net 30), and a closing.
+Keep it formal, concise, and ready to send. Do NOT add any JSON or formatting tags."""
+
+    try:
+        response = po_llm.invoke([
+            SystemMessage(content="You are a procurement officer writing formal business documents."),
+            HumanMessage(content=prompt)
+        ])
+        return response.content.strip()
+    except Exception as e:
+        # Fallback plain text
+        return (
+            f"PURCHASE ORDER #{order.get('order_id', 'N/A')}\n\n"
+            f"To: {order.get('vendor_name', 'N/A')} ({order.get('vendor_email', 'N/A')})\n\n"
+            f"We hereby place an order for {order.get('quantity')} units of "
+            f"{order.get('item_name')} at ${order.get('unit_price', 0):,.2f} per unit, "
+            f"totalling ${order.get('total_cost', 0):,.2f}.\n\n"
+            f"Payment terms: Net 30.\n\nRegards,\nAurora Industries Procurement"
+        )
+
+
+def sanitize_text(text: str) -> str:
+    """Replace Unicode characters that Helvetica can't render with ASCII equivalents."""
+    replacements = {
+        "\u2014": "--",   # em dash
+        "\u2013": "-",    # en dash
+        "\u2018": "'",    # left single quote
+        "\u2019": "'",    # right single quote / apostrophe
+        "\u201c": '"',    # left double quote
+        "\u201d": '"',    # right double quote
+        "\u2026": "...",  # ellipsis
+        "\u00a0": " ",    # non-breaking space
+        "\u00ae": "(R)",  # registered trademark
+        "\u00a9": "(C)",  # copyright
+        "\u2122": "(TM)", # trademark
+        "\u20ac": "EUR",  # euro sign
+        "\u00b0": " deg", # degree sign
+    }
+    for char, replacement in replacements.items():
+        text = text.replace(char, replacement)
+    # Final safety: drop any remaining non-latin1 characters
+    return text.encode("latin-1", errors="replace").decode("latin-1")
+
+
+def generate_order_pdf(order: dict, output_dir: str = "orders") -> str:
+    """
+    Generates a PDF Purchase Order using fpdf2.
+    Returns the path to the saved PDF file.
+    """
+    from fpdf import FPDF
+    import os
+    from datetime import datetime
+
+    os.makedirs(output_dir, exist_ok=True)
+    order_id  = order.get('order_id', 'unknown')
+    file_path = os.path.join(output_dir, f"order_{order_id}.pdf")
+
+    # Generate PO content via LLM and sanitize Unicode characters
+    po_body = sanitize_text(generate_po_content(order))
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_margins(20, 20, 20)
+
+    # ── Header ──────────────────────────────────
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.set_text_color(30, 30, 30)
+    pdf.cell(0, 10, "PURCHASE ORDER", align="C", new_x="LMARGIN", new_y="NEXT")
+
+    pdf.set_font("Helvetica", "", 11)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 6, f"PO Number: #{order_id}", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, f"Date: {order.get('created_at', datetime.now().strftime('%Y-%m-%d'))}", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(4)
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(20, pdf.get_y(), 190, pdf.get_y())
+    pdf.ln(6)
+
+    # ── Summary Table ───────────────────────────
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_text_color(30, 30, 30)
+    fields = [
+        ("Item",          order.get('item_name', 'N/A')),
+        ("Quantity",      str(order.get('quantity', 'N/A'))),
+        ("Unit Price",    f"${order.get('unit_price', 0):,.2f}"),
+        ("Total Amount",  f"${order.get('total_cost', 0):,.2f}"),
+        ("Vendor",        order.get('vendor_name', 'N/A')),
+        ("Vendor Email",  order.get('vendor_email', 'N/A')),
+        ("Priority",      order.get('priority', 'Standard')),
+    ]
+    for label, value in fields:
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.cell(50, 7, label + ":", new_x="RIGHT", new_y="TOP")
+        pdf.set_font("Helvetica", "", 10)
+        pdf.cell(0, 7, str(value), new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(4)
+    pdf.line(20, pdf.get_y(), 190, pdf.get_y())
+    pdf.ln(6)
+
+    # ── LLM-Generated PO Body ───────────────────
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 8, "Purchase Order Details", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(50, 50, 50)
+    pdf.multi_cell(0, 6, po_body)
+    pdf.ln(6)
+
+    # ── Footer ──────────────────────────────────
+    pdf.line(20, pdf.get_y(), 190, pdf.get_y())
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_text_color(130, 130, 130)
+    pdf.cell(0, 6, "Aurora Industries -- Procurement Department", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, "This is a system-generated Purchase Order.", align="C")
+
+    pdf.output(file_path)
+    return file_path

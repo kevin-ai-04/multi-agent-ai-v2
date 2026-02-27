@@ -229,3 +229,94 @@ async def get_email_analysis_endpoint(email_id: str):
             return {"status": "not_found"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Order Management API ---
+from fastapi.responses import FileResponse
+from backend.database import (
+    get_orders as db_get_orders,
+    get_order_by_id as db_get_order_by_id,
+    approve_order as db_approve_order,
+    reject_order as db_reject_order
+)
+from backend.agents import generate_order_pdf
+
+@app.get("/orders")
+async def list_orders():
+    """List all orders with item and vendor details."""
+    try:
+        return {"status": "success", "orders": db_get_orders()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/orders/{order_id}")
+async def get_order(order_id: int):
+    """Get a single order by ID."""
+    try:
+        order = db_get_order_by_id(order_id)
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        return {"status": "success", "order": order}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/orders/{order_id}/approve")
+async def approve_order_endpoint(order_id: int):
+    """Approve a DRAFT order and deduct from budget."""
+    try:
+        db_approve_order(order_id)
+        return {"status": "success", "message": f"Order #{order_id} approved."}
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/orders/{order_id}/reject")
+async def reject_order_endpoint(order_id: int):
+    """Reject an order."""
+    try:
+        db_reject_order(order_id)
+        return {"status": "success", "message": f"Order #{order_id} rejected."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/orders/{order_id}/generate-pdf")
+async def generate_pdf_endpoint(order_id: int):
+    """
+    Generates a PDF Purchase Order using LLM-written content.
+    Returns the PDF file as a download.
+    """
+    try:
+        order = db_get_order_by_id(order_id)
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+
+        # Build the dict that the PDF generator expects
+        order_context = {
+            "order_id":    order_id,
+            "item_name":   order.get("item_name", "N/A"),
+            "quantity":    order.get("qty", 0),
+            "unit_price":  order.get("unit_price", 0),
+            "total_cost":  order.get("amount", 0),
+            "vendor_name": order.get("vendor_name", "N/A"),
+            "vendor_email":order.get("vendor_email", "N/A"),
+            "priority":    order.get("status", "DRAFT"),
+            "created_at":  order.get("created_at", ""),
+        }
+
+        pdf_path = generate_order_pdf(order_context)
+
+        # Update the pdf_path in the orders table
+        from backend.database import get_db_connection
+        conn = get_db_connection()
+        conn.execute("UPDATE orders SET pdf_path = ? WHERE id = ?", (pdf_path, order_id))
+        conn.commit()
+        conn.close()
+
+        return FileResponse(
+            path=pdf_path,
+            filename=f"PO_{order_id}.pdf",
+            media_type="application/pdf"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
