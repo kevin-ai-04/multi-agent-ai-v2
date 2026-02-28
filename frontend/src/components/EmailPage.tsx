@@ -314,7 +314,7 @@ export function EmailPage({
                                         </div>
                                         <div>
                                             <span className="text-muted-foreground block text-xs">Quantity</span>
-                                            <span className="font-medium text-foreground">{analysisData.quantity} Units</span>
+                                            <span className="font-medium text-foreground">{analysisData.item_quantity} Units</span>
                                         </div>
                                         <div>
                                             <span className="text-muted-foreground block text-xs">Vendor</span>

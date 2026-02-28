@@ -125,7 +125,7 @@ def agent_email_node(state: AgentState):
 
                 # ── Step 5: Create DRAFT order ─────────────
                 if item_data and vendor_data:
-                    qty = analysis_data.get('quantity', 1)
+                    qty = saved.get('item_quantity', 1)
                     amount = saved.get('total_cost', 0) or 0
                     order_id = create_order(
                         item_id=item_data['id'],
@@ -203,11 +203,12 @@ def compliance_node(state: AgentState):
                 item_id   = analysis.get('item_id')
                 vendor_id = analysis.get('vendor_id')
                 amount    = analysis.get('total_cost', 0) or 0
+                qty       = analysis.get('item_quantity', 1)
                 if item_id and vendor_id and amount > 0:
                     order_id = create_order(
                         item_id=item_id,
                         vendor_id=vendor_id,
-                        qty=1,  # qty not stored in analysis; set to 1 as placeholder
+                        qty=qty,
                         amount=amount
                     )
                     order_ids.append(order_id)

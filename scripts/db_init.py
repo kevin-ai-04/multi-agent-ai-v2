@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS vendors(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   email TEXT,
+  phone TEXT,
   approved INTEGER DEFAULT 1,
   ext_score REAL DEFAULT 0
 );
@@ -75,6 +76,7 @@ CREATE TABLE IF NOT EXISTS email_analysis (
     item_id INTEGER,
     item_name TEXT,
     item_unit_price REAL,
+    item_quantity INTEGER,
     vendor_id INTEGER,
     vendor_name TEXT,
     vendor_email TEXT,
@@ -94,26 +96,36 @@ conn.executescript(schema)
 #conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Operations','2025-Q3',50000,0)")
 #conn.execute("INSERT OR IGNORE INTO policies(key,value) VALUES ('max_single_order_amount','50000')")
 #conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (1, 0, 1000, 50)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (1,'Tesla Energy','sales@teslaenergy.com',1,90)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (2,'LG Chem','contact@lgchem.com',1,88)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (3,'Panasonic','supply@panasonic.com',1,85)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (4,'Bosch Mobility','orders@bosch.com',1,87)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (5,'CATL','info@catl.com',1,92)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (6,'BYD Components','orders@byd.com',1,89)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (7,'Continental AG','sales@continental.com',1,84)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (8,'Valeo','orders@valeo.com',1,83)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (9,'Nippon Glass','supply@nippon-glass.jp',1,86)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (10,'ZF Friedrichshafen','sales@zf.com',1,82)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (11,'Delphi Tech','orders@delphi.com',1,80)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (12,'Magna EV Systems','supply@magna.com',1,81)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (13,'Samsung SDI','orders@samsung-sdi.com',1,91)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (14,'Hitachi Automotive','sales@hitachi-auto.com',1,85)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (15,'Infineon Tech','orders@infineon.com',1,87)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (16,'Texas Instruments','supply@ti.com',1,86)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (17,'Aptiv','contact@aptiv.com',1,84)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (18,'Lear Corp','sales@lear.com',1,83)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (19,'Harman Automotive','orders@harman.com',1,82)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (20,'Acme Corp','sales@acme.example',1,82)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (1,'Tesla Energy','sales@teslaenergy.com','555-0199',1,90)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (2,'LG Chem','contact@lgchem.com','555-0288',1,88)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (3,'Panasonic','supply@panasonic.com','555-0377',1,85)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (4,'Bosch Mobility','orders@bosch.com','555-0466',1,87)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (5,'CATL','info@catl.com','555-0555',1,92)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (6,'BYD Components','orders@byd.com','555-0644',1,89)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (7,'Continental AG','sales@continental.com','555-0733',1,84)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (8,'Valeo','orders@valeo.com','555-0822',1,83)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (9,'Nippon Glass','supply@nippon-glass.jp','555-0911',1,86)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (10,'ZF Friedrichshafen','sales@zf.com','555-1000',1,82)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (11,'Delphi Tech','orders@delphi.com','555-1199',1,80)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (12,'Magna EV Systems','supply@magna.com','555-1288',1,81)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (13,'Samsung SDI','orders@samsung-sdi.com','555-1377',1,91)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (14,'Hitachi Automotive','sales@hitachi-auto.com','555-1466',1,85)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (15,'Infineon Tech','orders@infineon.com','555-1555',1,87)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (16,'Texas Instruments','supply@ti.com','555-1644',1,86)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (17,'Aptiv','contact@aptiv.com','555-1733',1,84)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (18,'Lear Corp','sales@lear.com','555-1822',1,83)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (19,'Harman Automotive','orders@harman.com','555-1911',1,82)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (20,'Acme Corp','sales@acme.example','555-2000',1,82)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (21,'NVIDIA Auto','sales@nvidia-auto.com','555-2100',1,95)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (22,'Intel Mobileye','orders@mobileye.com','555-2200',1,93)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (23,'Qualcomm Auto','supply@qualcomm.com','555-2300',1,90)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (24,'Brembo S.p.A.','sales@brembo.com','555-2400',1,89)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (25,'Ohlins Racing','orders@ohlins.com','555-2500',1,88)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (26,'Recaro Automotive','supply@recaro.com','555-2600',1,87)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (27,'Sparco','sales@sparco.com','555-2700',1,85)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (28,'Hella GmbH','orders@hella.com','555-2800',1,86)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (29,'Denso Corp','sales@denso.com','555-2900',1,88)")
+conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,phone,approved,ext_score) VALUES (30,'Aisin Seiki','supply@aisin.com','555-3000',1,84)")
 
 # ---------------- Items ----------------
 conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_vendor_id) VALUES (1,'Lithium-ion Battery Pack 75kWh Model X','BAT-75KWH-X','unit',7500,1)")
@@ -194,17 +206,7 @@ conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity
 # But user said "expand compliance limits in order to support more storage". If DB exists, I might need to run an UPDATE.
 # I'll add an UPDATE at the end for existing items to boost capacity.
 
-# New Vendors
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (21,'NVIDIA Auto','sales@nvidia-auto.com',1,95)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (22,'Intel Mobileye','orders@mobileye.com',1,93)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (23,'Qualcomm Auto','supply@qualcomm.com',1,90)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (24,'Brembo S.p.A.','sales@brembo.com',1,89)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (25,'Ohlins Racing','orders@ohlins.com',1,88)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (26,'Recaro Automotive','supply@recaro.com',1,87)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (27,'Sparco','sales@sparco.com',1,85)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (28,'Hella GmbH','orders@hella.com',1,86)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (29,'Denso Corp','sales@denso.com',1,88)")
-conn.execute("INSERT OR IGNORE INTO vendors(id,name,email,approved,ext_score) VALUES (30,'Aisin Seiki','supply@aisin.com',1,84)")
+# Removed New Vendors block (moved to top with phone data)
 
 # New Items (51-100)
 conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_vendor_id) VALUES (51,'GPU Module Drive Orin','GPU-ORIN-X','unit',1500,21)")

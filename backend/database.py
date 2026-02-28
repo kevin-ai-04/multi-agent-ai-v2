@@ -11,6 +11,18 @@ DB_NAME = str(DB_DIR / "procurement.db")
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("ALTER TABLE email_analysis ADD COLUMN item_quantity INTEGER")
+        conn.commit()
+    except Exception:
+        pass # Column might already exist or table might not be ready yet
+    
+    try:
+        conn.execute("ALTER TABLE vendors ADD COLUMN phone TEXT")
+        conn.commit()
+    except Exception:
+        pass # Column might already exist
+
     return conn
 
 def init_db():
@@ -231,9 +243,9 @@ def save_email_analysis(email_id: str, analysis_data: dict, item_data: dict, ven
     
     c.execute('''
         INSERT OR REPLACE INTO email_analysis (
-            email_id, priority, summary, item_id, item_name, item_unit_price,
+            email_id, priority, summary, item_id, item_name, item_unit_price, item_quantity,
             vendor_id, vendor_name, vendor_email, vendor_phone, total_cost
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         email_id,
         analysis_data.get('priority'),
@@ -241,10 +253,11 @@ def save_email_analysis(email_id: str, analysis_data: dict, item_data: dict, ven
         item_data.get('id') if item_data else None,
         item_data.get('name') if item_data else analysis_data.get('item_name'),
         unit_price,
+        quantity,
         vendor_data.get('id') if vendor_data else None,
         vendor_data.get('name') if vendor_data else None,
         vendor_data.get('email') if vendor_data else None,
-        None, # vendor_phone doesn't exist in new schema
+        vendor_data.get('phone') if vendor_data else None,
         total_cost
     ))
     
