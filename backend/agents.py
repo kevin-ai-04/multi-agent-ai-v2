@@ -101,11 +101,11 @@ def convert_text_to_num(input_str: str) -> str:
 from typing import List, Optional, Literal
 
 class UIAction(BaseModel):
-    action_type: Literal["redirect", "set_filter", "popup"] = Field(description="The type of UI action to perform.")
-    params: dict = Field(default_factory=dict, description="The parameters for the UI action (e.g., view name for redirect, filter values for set_filter).")
+    action_type: Literal["redirect", "set_filter", "popup", "trigger_api"] = Field(description="The type of UI action to perform.")
+    params: dict = Field(default_factory=dict, description="The parameters for the UI action (e.g., view name for redirect, filter values for set_filter, endpoint and label for trigger_api).")
 
 class OrchestrationResponse(BaseModel):
-    decision: Literal["num2text", "text2num", "email", "compliance", "pdf", "unknown"] = Field(description="The routing decision for the orchestrator.")
+    decision: Literal["num2text", "text2num", "email", "unknown"] = Field(description="The routing decision for the orchestrator.")
     ui_actions: List[UIAction] = Field(default_factory=list, description="A list of UI actions to trigger based on user intent.")
     chat_response: Optional[str] = Field(default=None, description="A direct conversational response for greetings or banter.")
 
@@ -117,9 +117,9 @@ def orchestrator_router(input_str: str) -> OrchestrationResponse:
     prompt = f"""You are an AI orchestrator. 
     You MUST respond with a JSON object exactly matching this structure:
     {{
-      "decision": "num2text" | "text2num" | "email" | "compliance" | "pdf" | "unknown",
+      "decision": "num2text" | "text2num" | "email" | "unknown",
       "ui_actions": [
-        {{ "action_type": "redirect" | "set_filter" | "popup", "params": {{ "view": "...", "search": "...", "priority": "High"|"Medium"|"Low", "sort": "newest"|"oldest" }} }}
+        {{ "action_type": "redirect" | "set_filter" | "popup" | "trigger_api", "params": {{ "view": "...", "search": "...", "priority": "High"|"Medium"|"Low", "sort": "newest"|"oldest", "endpoint": "...", "method": "POST", "label": "..." }} }}
       ],
       "chat_response": "string or null"
     }}
@@ -128,29 +128,20 @@ def orchestrator_router(input_str: str) -> OrchestrationResponse:
     - 'decision': If input is about numbers:
         - Use 'num2text' if input has DIGITS (e.g. '42').
         - Use 'text2num' if input has WORDS (e.g. 'forty two').
-    - 'decision': Set to 'email' ONLY for active processing: ANALYZE, PROCESS, SCAN emails for data. Keywords: analyze, analyse, process, scan inbox, extract orders.
-    - 'decision': Set to 'compliance' for running compliance/gatekeeper checks on already-analyzed emails. Keywords: compliance, gatekeeper, run checks, check compliance, verify orders.
-    - 'decision': Set to 'pdf' if user wants to generate or create a PDF/PO/purchase order for a specific order. The input MUST contain a number (the order ID). Keywords: generate pdf, create pdf, generate po, create purchase order, make pdf.
-    - 'decision': IMPORTANT — when decision is 'email', 'compliance', or 'pdf', set ui_actions to [] (background pipeline, no navigation).
+    - 'decision': Set to 'email' ONLY for active processing: ANALYZE ALL, PROCESS, SCAN emails for data. Keywords: analyze, analyse, process, scan inbox.
+    - 'decision': IMPORTANT — For 'email', set ui_actions to [] (background pipeline, no navigation).
+    - 'decision': For requests regarding COMPLIANCE (e.g. "check compliance 42") or ORDERS/PDF (e.g. "generate order 42"), set to 'unknown' AND provide a 'trigger_api' action.
+        - Endpoint for compliance: "/procurement/<id>/compliance"
+        - Endpoint for order: "/procurement/<id>/order"
+        - If ID is missing, ask the user via chat_response.
     - 'decision': For navigation/viewing (show, list, open, go to inbox, display), use 'unknown' + ui_actions redirect.
     - 'decision': For greetings/banter/capability questions, use 'unknown' + chat_response.
-    - UI Actions (only for 'unknown' decision):
-        - For viewing/navigating to emails: use 'redirect' with view: 'emails'.
-        - For specific filtering: use 'set_filter' with params 'search', 'priority', or 'sort'.
-        - For greetings/banter/meta-questions: NO ui_actions, just chat_response.
     
     EXAMPLES:
-    - User: "analyze emails": {{"decision": "email", "chat_response": null, "ui_actions": []}}
-    - User: "process my inbox": {{"decision": "email", "chat_response": null, "ui_actions": []}}
-    - User: "run compliance checks": {{"decision": "compliance", "chat_response": null, "ui_actions": []}}
-    - User: "check compliance": {{"decision": "compliance", "chat_response": null, "ui_actions": []}}
-    - User: "run gatekeeper": {{"decision": "compliance", "chat_response": null, "ui_actions": []}}
-    - User: "generate pdf for order 14": {{"decision": "pdf", "chat_response": null, "ui_actions": []}}
-    - User: "create purchase order 5": {{"decision": "pdf", "chat_response": null, "ui_actions": []}}
-    - User: "make pdf order 20": {{"decision": "pdf", "chat_response": null, "ui_actions": []}}
+    - User: "analyze emails": {{"decision": "email", "chat_response": "Starting extraction pipeline...", "ui_actions": []}}
+    - User: "check compliance for 14": {{"decision": "unknown", "chat_response": "I can trigger the compliance workflow for ID 14.", "ui_actions": [{{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/14/compliance", "method": "POST", "label": "Run Compliance (14)"}}}}]}}
+    - User: "generate pdf for order 14": {{"decision": "unknown", "chat_response": "Click below to generate the order and PDF for ID 14.", "ui_actions": [{{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/14/order", "method": "POST", "label": "Generate Order (14)"}}}}]}}
     - User: "show me high priority emails": {{"decision": "unknown", "chat_response": null, "ui_actions": [{{"action_type": "redirect", "params": {{"view": "emails"}}}}, {{"action_type": "set_filter", "params": {{"priority": "High"}}}}]}}
-    - User: "go to inbox": {{"decision": "unknown", "chat_response": null, "ui_actions": [{{"action_type": "redirect", "params": {{"view": "emails"}}}}]}}
-    - User: "what can you do?": {{"decision": "unknown", "chat_response": "I can analyze procurement emails, run compliance checks, generate PDFs, navigate your inbox, and convert numbers.", "ui_actions": []}}
     - User: "convert forty two": {{"decision": "text2num", "chat_response": null, "ui_actions": []}}
     
     User Input: "{input_str}"

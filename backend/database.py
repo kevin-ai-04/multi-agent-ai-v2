@@ -11,18 +11,6 @@ DB_NAME = str(DB_DIR / "procurement.db")
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
-    try:
-        conn.execute("ALTER TABLE email_analysis ADD COLUMN item_quantity INTEGER")
-        conn.commit()
-    except Exception:
-        pass # Column might already exist or table might not be ready yet
-    
-    try:
-        conn.execute("ALTER TABLE vendors ADD COLUMN phone TEXT")
-        conn.commit()
-    except Exception:
-        pass # Column might already exist
-
     return conn
 
 def init_db():

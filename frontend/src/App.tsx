@@ -54,6 +54,24 @@ function App() {
             if (search !== undefined) setSearchQuery(search);
             if (priority !== undefined) setPriorityFilter(priority);
             if (sort !== undefined) setSortOrder(sort as any);
+        } else if (action.action_type === "trigger_api") {
+            const { endpoint, method = "POST", payload, label = "Executing..." } = action.params;
+            setIsLoading(true);
+            setMessages(prev => [...prev, { role: "user", content: `(Clicked) ${label}` }]);
+
+            fetch(`http://localhost:8000${endpoint}`, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: payload ? JSON.stringify(payload) : undefined
+            })
+                .then(res => res.json())
+                .then(data => {
+                    setMessages(prev => [...prev, { role: "assistant", content: `Result: ${JSON.stringify(data.status)} - ${data.explanation || data.message || "Success"}` }]);
+                })
+                .catch(err => {
+                    setMessages(prev => [...prev, { role: "assistant", content: `Error executing API: ${err.message}` }]);
+                })
+                .finally(() => setIsLoading(false));
         }
     }
 

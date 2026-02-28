@@ -11,6 +11,7 @@ export interface Message {
     role: 'user' | 'assistant';
     content: string;
     steps?: string[];
+    ui_actions?: any[];
 }
 
 interface ChatInterfaceProps {
@@ -69,12 +70,17 @@ export function ChatInterface({
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: response.response_text,
-                steps: response.steps
+                steps: response.steps,
+                ui_actions: response.ui_actions
             }]);
 
             // Handle UI Actions from LLM
             if (response.ui_actions && onUIAction) {
-                response.ui_actions.forEach(action => onUIAction(action));
+                response.ui_actions.forEach((action: any) => {
+                    if (action.action_type !== 'trigger_api') {
+                        onUIAction(action);
+                    }
+                });
             }
             setCurrentSteps([]);
 
@@ -92,7 +98,7 @@ export function ChatInterface({
             <ScrollArea className="flex-1 px-4 py-6">
                 <div className="max-w-4xl mx-auto space-y-8">
                     {messages.map((msg, index) => (
-                        <MessageBubble key={index} msg={msg} />
+                        <MessageBubble key={index} msg={msg} onActionClick={onUIAction} />
                     ))}
 
                     {/* Live Status Indicator (Floating) */}

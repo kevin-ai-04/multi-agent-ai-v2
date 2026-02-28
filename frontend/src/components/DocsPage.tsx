@@ -227,6 +227,35 @@ export function DocsPage() {
                         </div>
                     </section>
 
+                    {/* Key Endpoints */}
+                    <section className="space-y-4">
+                        <div className="flex items-center gap-2 text-green-500">
+                            <Network className="h-6 w-6" />
+                            <h3 className="text-2xl font-semibold text-foreground">Interactive Procurement APIs</h3>
+                        </div>
+                        <p className="text-muted-foreground">
+                            The system decouples extraction from downstream pipelines, allowing user-gated execution via these endpoints:
+                        </p>
+                        <div className="grid gap-4">
+                            <Card className="p-5 flex gap-4 items-start bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10">
+                                <div>
+                                    <h4 className="font-mono font-semibold text-blue-500">POST /procurement/{"{email_id}"}/compliance</h4>
+                                    <p className="text-sm text-foreground/90 mt-1">
+                                        Runs the gatekeeper rules against an already extracted email record. Updates the `compliance_status` flag to either `Passed` or `Failed` and saves a plain-english explanation.
+                                    </p>
+                                </div>
+                            </Card>
+                            <Card className="p-5 flex gap-4 items-start bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10">
+                                <div>
+                                    <h4 className="font-mono font-semibold text-green-500">POST /procurement/{"{email_id}"}/order</h4>
+                                    <p className="text-sm text-foreground/90 mt-1">
+                                        Initiates actual purchase order creation. Only executes if the row's `compliance_status` is `Passed`. Drops a record in the `orders` table and triggers local PDF file generation.
+                                    </p>
+                                </div>
+                            </Card>
+                        </div>
+                    </section>
+
                     {/* Database Tables */}
                     <section className="space-y-4">
                         <div className="flex items-center gap-2 text-rose-500">
@@ -257,7 +286,7 @@ export function DocsPage() {
                                     Holds structured data extracted by the Email Agent.
                                 </p>
                                 <p className="text-xs font-mono text-muted-foreground bg-black/5 dark:bg-white/5 p-1 rounded overflow-x-auto whitespace-nowrap">
-                                    id, email_id, priority, summary, item_id, item_name, item_unit_price, vendor_id, vendor_name, vendor_email, vendor_phone, total_cost
+                                    id, email_id, priority, summary, item_id, item_name, item_quantity, item_unit_price, vendor_id, vendor_name, vendor_email, vendor_phone, total_cost, compliance_status, compliance_explanation, order_id
                                 </p>
                             </Card>
 
@@ -337,7 +366,7 @@ export function DocsPage() {
 
                     <div className="h-20" /> {/* Bottom spacer */}
                 </div>
-            </ScrollArea>
-        </div>
+            </ScrollArea >
+        </div >
     );
 }

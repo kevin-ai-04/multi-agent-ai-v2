@@ -138,6 +138,27 @@ export async function analyzeEmail(emailId: string): Promise<{ status: string, d
     return response.json();
 }
 
+export async function runCompliance(emailId: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/procurement/${emailId}/compliance`, {
+        method: "POST",
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to check compliance: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+export async function generateOrder(emailId: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/procurement/${emailId}/order`, {
+        method: "POST",
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to generate order: ${response.statusText}`);
+    }
+    return response.json();
+}
+
 export async function analyzeAllEmails(): Promise<{ status: string, processed_count: number, results: any[] }> {
     const response = await fetch(`${API_BASE_URL}/emails/analyze_all`, {
         method: "POST",

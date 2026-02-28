@@ -40,7 +40,7 @@ import {
     DropdownMenuRadioGroup,
     DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
-import { fetchEmails, sendEmail, syncEmails, EmailItem, analyzeEmail, analyzeAllEmails, getEmailAnalysis } from "@/api/client";
+import { fetchEmails, sendEmail, syncEmails, EmailItem, analyzeEmail, analyzeAllEmails, getEmailAnalysis, runCompliance, generateOrder, updateTableRow } from "@/api/client";
 import { Message } from "@/components/ChatInterface";
 
 interface EmailPageProps {
@@ -81,6 +81,76 @@ export function EmailPage({
     const [analyzingEmailId, setAnalyzingEmailId] = useState<string | null>(null);
     const [analysisData, setAnalysisData] = useState<any | null>(null);
     const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+
+    // Procurement State
+    const [isProcurementOpen, setIsProcurementOpen] = useState(false);
+    const [procQuantity, setProcQuantity] = useState<number>(1);
+    const [procComplianceStatus, setProcComplianceStatus] = useState<string>("Pending");
+    const [procExplanation, setProcExplanation] = useState<string>("");
+    const [procOrderId, setProcOrderId] = useState<number | null>(null);
+    const [procPdfPath, setProcPdfPath] = useState<string | null>(null);
+    const [isCheckingCompliance, setIsCheckingCompliance] = useState(false);
+    const [isGeneratingOrder, setIsGeneratingOrder] = useState(false);
+    const [isSavingData, setIsSavingData] = useState(false);
+
+    const openProcurementModal = () => {
+        if (!analysisData) return;
+        setProcQuantity(analysisData.item_quantity || 1);
+        setProcComplianceStatus(analysisData.compliance_status || "Pending");
+        setProcExplanation(analysisData.compliance_explanation || "");
+        setProcOrderId(analysisData.order_id || null);
+        setIsProcurementOpen(true);
+    };
+
+    const handleSaveProcData = async () => {
+        setIsSavingData(true);
+        try {
+            const updatedRow = { ...analysisData, item_quantity: procQuantity };
+            await updateTableRow('email_analysis', analysisData, updatedRow);
+            // Refresh analysis data local
+            setAnalysisData(updatedRow);
+            alert("Data saved. You can now run compliance.");
+        } catch (error: any) {
+            alert(`Failed to save data: ${error.message}`);
+        } finally {
+            setIsSavingData(false);
+        }
+    };
+
+    const handleRunCompliance = async () => {
+        setIsCheckingCompliance(true);
+        try {
+            const res = await runCompliance(selectedEmail!.id);
+            setProcComplianceStatus(res.passed ? "Passed" : "Failed");
+            setProcExplanation(res.explanation);
+            setAnalysisData((prev: any) => ({
+                ...prev,
+                compliance_status: res.passed ? "Passed" : "Failed",
+                compliance_explanation: res.explanation
+            }));
+        } catch (error: any) {
+            alert(`Failed to check compliance: ${error.message}`);
+        } finally {
+            setIsCheckingCompliance(false);
+        }
+    };
+
+    const handleGenerateOrder = async () => {
+        setIsGeneratingOrder(true);
+        try {
+            const res = await generateOrder(selectedEmail!.id);
+            if (res.status === "success" || res.order_id) {
+                const oid = res.order_id || res.data?.order_id;
+                setProcOrderId(oid);
+                setProcPdfPath(res.pdf_path || res.data?.pdf_path);
+                setAnalysisData((prev: any) => ({ ...prev, order_id: oid }));
+            }
+        } catch (error: any) {
+            alert(`Failed to generate order: ${error.message}`);
+        } finally {
+            setIsGeneratingOrder(false);
+        }
+    };
 
     // Fetch Emails
     const loadEmails = async () => {
@@ -295,9 +365,14 @@ export function EmailPage({
                         )}
                         {!isLoadingAnalysis && analysisData && (
                             <div className="mb-8 overflow-hidden rounded-xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-blue-500/5 backdrop-blur-sm">
-                                <div className="px-6 py-3 border-b border-purple-500/10 bg-purple-500/10 flex items-center gap-2">
-                                    <Wand2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                    <h3 className="text-sm font-semibold text-purple-800 dark:text-purple-200">AI Analysis Summary</h3>
+                                <div className="px-6 py-3 border-b border-purple-500/10 bg-purple-500/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Wand2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                        <h3 className="text-sm font-semibold text-purple-800 dark:text-purple-200">AI Analysis Summary</h3>
+                                    </div>
+                                    <Button size="sm" onClick={openProcurementModal} className="bg-green-600 hover:bg-green-500 text-white shadow shadow-green-500/20 gap-1 h-8 px-3">
+                                        <Wand2 className="h-3.5 w-3.5" /> Start Procurement
+                                    </Button>
                                 </div>
                                 <div className="p-6">
                                     <p className="text-sm text-foreground/90 mb-4">{analysisData.summary}</p>
@@ -348,6 +423,106 @@ export function EmailPage({
                         <div className="prose dark:prose-invert max-w-none text-foreground/90 whitespace-pre-wrap leading-relaxed font-sans">
                             {selectedEmail.body}
                         </div>
+
+                        {/* Interactive Procurement Modal */}
+                        <Dialog open={isProcurementOpen} onOpenChange={setIsProcurementOpen}>
+                            <DialogContent className="sm:max-w-[600px] bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-white/10">
+                                <DialogHeader>
+                                    <DialogTitle>Interactive Procurement</DialogTitle>
+                                </DialogHeader>
+                                <div className="grid gap-4 py-4">
+
+                                    {/* Data Review & Edit */}
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label className="text-right text-xs text-muted-foreground uppercase">Item</Label>
+                                        <div className="col-span-3 font-medium">{analysisData?.item_name || "Unknown"}</div>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label className="text-right text-xs text-muted-foreground uppercase">Vendor</Label>
+                                        <div className="col-span-3 font-medium">{analysisData?.vendor_name || "Unknown"}</div>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="quantity" className="text-right text-xs text-muted-foreground uppercase">Quantity</Label>
+                                        <Input
+                                            id="quantity"
+                                            type="number"
+                                            value={procQuantity}
+                                            onChange={(e) => setProcQuantity(Number(e.target.value))}
+                                            className="col-span-3 bg-white/5"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label className="text-right text-xs text-muted-foreground uppercase">Unit Price ($)</Label>
+                                        <div className="col-span-3 font-medium">{analysisData?.item_unit_price}</div>
+                                    </div>
+
+                                    {/* Save Edits */}
+                                    <div className="flex justify-end mt-2">
+                                        <Button variant="outline" size="sm" onClick={handleSaveProcData} disabled={isSavingData}>
+                                            {isSavingData ? "Saving..." : "Save Edits"}
+                                        </Button>
+                                    </div>
+
+                                    <div className="h-px bg-white/10 my-2" />
+
+                                    {/* Compliance Section */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-sm font-semibold">Stage 1: Compliance</h4>
+                                            <span className={`text-xs px-2 py-1 rounded-full border ${procComplianceStatus === 'Passed' ? 'bg-green-500/10 text-green-500 border-green-500/20' : procComplianceStatus === 'Failed' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'}`}>
+                                                {procComplianceStatus}
+                                            </span>
+                                        </div>
+                                        {procExplanation && (
+                                            <div className="text-sm p-3 rounded bg-white/5 border border-white/10 text-muted-foreground">
+                                                {procExplanation}
+                                            </div>
+                                        )}
+                                        <Button
+                                            className="w-full bg-blue-600 hover:bg-blue-500"
+                                            onClick={handleRunCompliance}
+                                            disabled={isCheckingCompliance}
+                                        >
+                                            {isCheckingCompliance ? "Checking..." : "Run Compliance Checks"}
+                                        </Button>
+                                    </div>
+
+                                    <div className="h-px bg-white/10 my-2" />
+
+                                    {/* Ordering Section */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-sm font-semibold opacity-50">Stage 2: Purchase Order</h4>
+                                        </div>
+                                        {procComplianceStatus !== 'Passed' ? (
+                                            <div className="text-sm text-center text-muted-foreground py-2 border border-dashed border-white/10 rounded">
+                                                Must pass compliance to generate order.
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {procOrderId ? (
+                                                    <div className="text-sm p-3 rounded bg-green-500/10 border border-green-500/20 text-green-600 flex flex-col gap-2">
+                                                        <span>Order #{procOrderId} created successfully!</span>
+                                                        {procPdfPath && (
+                                                            <a href="#" className="font-semibold underline">Download PO PDF</a>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <Button
+                                                        className="w-full bg-green-600 hover:bg-green-500"
+                                                        onClick={handleGenerateOrder}
+                                                        disabled={isGeneratingOrder}
+                                                    >
+                                                        {isGeneratingOrder ? "Generating..." : "Generate Purchase Order"}
+                                                    </Button>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+
+                                </div>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 </ScrollArea>
             </div>

@@ -112,55 +112,17 @@ def agent_email_node(state: AgentState):
             if not saved:
                 continue
 
-            # ── Step 4: Compliance checks ──────────────────
-            gate = run_gatekeeper_checks(saved)
-            explanation = explain_compliance_result(saved, gate)
-            gate['email_id'] = email_id
-            gate['item_name'] = analysis_data.get('item_name', 'Unknown')
-            gate['explanation'] = explanation
-            gatekeeper_results.append(gate)
-
-            if gate['passed']:
-                steps.append(f"✅ Compliance PASSED: {explanation}")
-
-                # ── Step 5: Create DRAFT order ─────────────
-                if item_data and vendor_data:
-                    qty = saved.get('item_quantity', 1)
-                    amount = saved.get('total_cost', 0) or 0
-                    order_id = create_order(
-                        item_id=item_data['id'],
-                        vendor_id=vendor_data['id'],
-                        qty=qty,
-                        amount=amount
-                    )
-                    order_ids.append(order_id)
-                    order_count += 1
-                    steps.append(
-                        f"📋 Order #{order_id} created (DRAFT): {qty}x '{item_data['name']}' "
-                        f"from {vendor_data['name']} — ${amount:,.2f}"
-                    )
-                else:
-                    steps.append(f"⚠️ Order skipped: item/vendor not in catalog for email '{email_id}'.")
-            else:
-                rejected_count += 1
-                steps.append(f"❌ Compliance FAILED: {explanation}")
-
         except Exception as e:
             steps.append(f"Error processing email '{email_id}': {str(e)}")
 
-    summary = (
-        f"Pipeline complete — Analyzed: {analyzed_count}, "
-        f"Orders created: {order_count}, Rejected: {rejected_count}."
-    )
-    if order_ids:
-        summary += f" Order IDs: {order_ids}. Say 'generate PDF for order #{order_ids[0]}' to create a PO document."
-
+    summary = f"Pipeline complete — Extractions saved: {analyzed_count}."
     steps.append(summary)
+    
     return {
         "output_text": summary,
         "steps": steps,
-        "gatekeeper_results": gatekeeper_results,
-        "order_ids": order_ids
+        "gatekeeper_results": [],
+        "order_ids": []
     }
 
 

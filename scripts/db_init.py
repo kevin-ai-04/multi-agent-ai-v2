@@ -82,7 +82,11 @@ CREATE TABLE IF NOT EXISTS email_analysis (
     vendor_email TEXT,
     vendor_phone TEXT,
     total_cost REAL,
-    FOREIGN KEY(email_id) REFERENCES emails(id)
+    compliance_status TEXT DEFAULT 'Pending',
+    compliance_explanation TEXT,
+    order_id INTEGER,
+    FOREIGN KEY(email_id) REFERENCES emails(id),
+    FOREIGN KEY(order_id) REFERENCES orders(id)
 );
 
 """

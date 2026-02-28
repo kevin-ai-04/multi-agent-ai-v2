@@ -230,6 +230,69 @@ async def get_email_analysis_endpoint(email_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/procurement/{email_id}/compliance")
+async def check_compliance(email_id: str):
+    from backend.agents import run_gatekeeper_checks, explain_compliance_result
+    try:
+        analysis = get_email_analysis(email_id)
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+            
+        gate = run_gatekeeper_checks(analysis)
+        explanation = explain_compliance_result(analysis, gate)
+        
+        passed = bool(gate['passed'])
+        status_text = 'Passed' if passed else 'Failed'
+        
+        conn = get_db_connection()
+        conn.execute(
+            "UPDATE email_analysis SET compliance_status = ?, compliance_explanation = ? WHERE email_id = ?",
+            (status_text, explanation, email_id)
+        )
+        conn.commit()
+        conn.close()
+        
+        return {"status": "success", "passed": passed, "explanation": explanation}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/procurement/{email_id}/order")
+async def generate_procurement_order(email_id: str):
+    from backend.database import create_order, get_order_by_id as db_get_order_by_id
+    from backend.agents import generate_order_pdf
+    try:
+        analysis = get_email_analysis(email_id)
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+            
+        if analysis.get('compliance_status') != 'Passed':
+            raise HTTPException(status_code=400, detail="Cannot create order: Compliance checks have not passed.")
+            
+        order_id = create_order(
+            item_id=analysis['item_id'],
+            vendor_id=analysis['vendor_id'],
+            qty=analysis['item_quantity'],
+            amount=analysis['total_cost']
+        )
+        
+        conn = get_db_connection()
+        conn.execute(
+            "UPDATE email_analysis SET order_id = ? WHERE email_id = ?",
+            (order_id, email_id)
+        )
+        conn.commit()
+        conn.close()
+        
+        order_data = db_get_order_by_id(order_id)
+        pdf_path = generate_order_pdf(order_data)
+        
+        return {"status": "success", "order_id": order_id, "pdf_path": pdf_path}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- Order Management API ---
 from fastapi.responses import FileResponse
