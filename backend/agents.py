@@ -130,17 +130,24 @@ def orchestrator_router(input_str: str) -> OrchestrationResponse:
         - Use 'text2num' if input has WORDS (e.g. 'forty two').
     - 'decision': Set to 'email' ONLY for active processing: ANALYZE ALL, PROCESS, SCAN emails for data. Keywords: analyze, analyse, process, scan inbox.
     - 'decision': IMPORTANT — For 'email', set ui_actions to [] (background pipeline, no navigation).
-    - 'decision': For requests regarding COMPLIANCE (e.g. "check compliance 42") or ORDERS/PDF (e.g. "generate order 42"), set to 'unknown' AND provide a 'trigger_api' action.
-        - Endpoint for compliance: "/procurement/<id>/compliance"
-        - Endpoint for order: "/procurement/<id>/order"
+    - 'decision': For COMPLIANCE or ORDER by numeric ID, set to 'unknown' + trigger_api:
+        - Endpoint for compliance by email id: "/procurement/<id>/compliance"
+        - Endpoint for order PDF by order id: "/orders/<id>/generate-pdf"
         - If ID is missing, ask the user via chat_response.
+    - 'decision': For ORDER or COMPLIANCE requests by ITEM NAME (e.g. "order mud flap set", "compliance for lithium battery"):
+        - Set to 'unknown' and return TWO trigger_api actions in sequence:
+          1. compliance: POST /procurement/compliance-by-item  payload: {{"item_name": "<extracted item name>"}}  label: "1. Run Compliance – <item name>"
+          2. order:      POST /procurement/order-by-item       payload: {{"item_name": "<extracted item name>"}}  label: "2. Generate Order – <item name>"
+        - chat_response should say: "Run compliance first, then generate the order."
     - 'decision': For navigation/viewing (show, list, open, go to inbox, display), use 'unknown' + ui_actions redirect.
     - 'decision': For greetings/banter/capability questions, use 'unknown' + chat_response.
     
     EXAMPLES:
     - User: "analyze emails": {{"decision": "email", "chat_response": "Starting extraction pipeline...", "ui_actions": []}}
-    - User: "check compliance for 14": {{"decision": "unknown", "chat_response": "I can trigger the compliance workflow for ID 14.", "ui_actions": [{{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/14/compliance", "method": "POST", "label": "Run Compliance (14)"}}}}]}}
-    - User: "generate pdf for order 14": {{"decision": "unknown", "chat_response": "Click below to generate the order and PDF for ID 14.", "ui_actions": [{{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/14/order", "method": "POST", "label": "Generate Order (14)"}}}}]}}
+    - User: "check compliance for 14": {{"decision": "unknown", "chat_response": "Triggering compliance for email 14.", "ui_actions": [{{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/14/compliance", "method": "POST", "label": "Run Compliance (14)"}}}}]}}
+    - User: "generate pdf for order 14": {{"decision": "unknown", "chat_response": "Click below to generate the PDF for order 14.", "ui_actions": [{{"action_type": "trigger_api", "params": {{"endpoint": "/orders/14/generate-pdf", "method": "POST", "label": "Generate PDF (Order 14)"}}}}]}}
+    - User: "order mud flap set": {{"decision": "unknown", "chat_response": "Run compliance first, then generate the order.", "ui_actions": [{{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/compliance-by-item", "method": "POST", "payload": {{"item_name": "mud flap set"}}, "label": "1. Run Compliance – Mud Flap Set"}}}}, {{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/order-by-item", "method": "POST", "payload": {{"item_name": "mud flap set"}}, "label": "2. Generate Order – Mud Flap Set"}}}}]}}
+    - User: "order lithium battery": {{"decision": "unknown", "chat_response": "Run compliance first, then generate the order.", "ui_actions": [{{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/compliance-by-item", "method": "POST", "payload": {{"item_name": "lithium battery"}}, "label": "1. Run Compliance – Lithium Battery"}}}}, {{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/order-by-item", "method": "POST", "payload": {{"item_name": "lithium battery"}}, "label": "2. Generate Order – Lithium Battery"}}}}]}}
     - User: "show me high priority emails": {{"decision": "unknown", "chat_response": null, "ui_actions": [{{"action_type": "redirect", "params": {{"view": "emails"}}}}, {{"action_type": "set_filter", "params": {{"priority": "High"}}}}]}}
     - User: "convert forty two": {{"decision": "text2num", "chat_response": null, "ui_actions": []}}
     
@@ -468,7 +475,7 @@ def generate_order_pdf(order: dict, output_dir: str = "orders") -> str:
     from datetime import datetime
 
     os.makedirs(output_dir, exist_ok=True)
-    order_id  = order.get('order_id', 'unknown')
+    order_id  = order.get('order_id') or order.get('id', 'unknown')
     file_path = os.path.join(output_dir, f"order_{order_id}.pdf")
 
     # Generate PO content via LLM and sanitize Unicode characters
