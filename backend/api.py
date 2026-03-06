@@ -165,7 +165,7 @@ async def api_delete_table_data(table_name: str):
 
 # --- Email Analysis API ---
 from backend.agents import analyze_email_content
-from backend.database import get_item_by_name, get_vendor, save_email_analysis, get_email_analysis, get_unanalyzed_emails, get_db_connection
+from backend.database import get_item_by_name, get_vendor, save_email_analysis, get_email_analysis, get_unanalyzed_emails, get_db_connection, find_analysis_by_item_name
 
 def _process_email_analysis(email_id: str, body: str):
     # Call LLM
@@ -318,6 +318,92 @@ async def generate_procurement_order(email_id: str):
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/procurement/compliance-by-item")
+async def compliance_by_item_name(payload: dict):
+    """
+    Runs compliance checks for the most recent email analysis matching the given item name.
+    """
+    from backend.agents import run_gatekeeper_checks, explain_compliance_result
+    item_name = payload.get("item_name", "").strip()
+    if not item_name:
+        raise HTTPException(status_code=400, detail="item_name is required")
+
+    analysis = find_analysis_by_item_name(item_name)
+    if not analysis:
+        raise HTTPException(status_code=404, detail=f"No email analysis found for '{item_name}'")
+
+    gate = run_gatekeeper_checks(analysis)
+    explanation = explain_compliance_result(analysis, gate)
+    passed = bool(gate["passed"])
+    status_text = "Passed" if passed else "Failed"
+
+    conn = get_db_connection()
+    conn.execute(
+        "UPDATE email_analysis SET compliance_status = ?, compliance_explanation = ? WHERE email_id = ?",
+        (status_text, explanation, analysis["email_id"])
+    )
+    conn.commit()
+    conn.close()
+
+    return {
+        "status": "success",
+        "item_name": analysis.get("item_name"),
+        "email_id": analysis["email_id"],
+        "passed": passed,
+        "explanation": explanation
+    }
+
+
+@app.post("/procurement/order-by-item")
+async def order_by_item_name(payload: dict):
+    """
+    Creates a purchase order + generates PDF for the most recent compliant
+    email analysis matching the given item name.
+    """
+    from backend.database import create_order, get_order_by_id as db_get_order_by_id
+    from backend.agents import generate_order_pdf
+
+    item_name = payload.get("item_name", "").strip()
+    if not item_name:
+        raise HTTPException(status_code=400, detail="item_name is required")
+
+    analysis = find_analysis_by_item_name(item_name)
+    if not analysis:
+        raise HTTPException(status_code=404, detail=f"No email analysis found for '{item_name}'")
+
+    if analysis.get("compliance_status") != "Passed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot create order: compliance has not passed for '{analysis.get('item_name', item_name)}'. Run compliance check first."
+        )
+
+    order_id = create_order(
+        item_id=analysis["item_id"],
+        vendor_id=analysis["vendor_id"],
+        qty=analysis["item_quantity"],
+        amount=analysis["total_cost"]
+    )
+
+    conn = get_db_connection()
+    conn.execute(
+        "UPDATE email_analysis SET order_id = ? WHERE email_id = ?",
+        (order_id, analysis["email_id"])
+    )
+    conn.commit()
+    conn.close()
+
+    order_data = db_get_order_by_id(order_id)
+    pdf_path = generate_order_pdf(order_data)
+
+    return {
+        "status": "success",
+        "item_name": analysis.get("item_name"),
+        "order_id": order_id,
+        "pdf_path": pdf_path,
+        "message": f"Order #{order_id} created and PDF generated."
+    }
+
 
 # --- Order Management API ---
 from fastapi.responses import FileResponse

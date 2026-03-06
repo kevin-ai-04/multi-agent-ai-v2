@@ -303,6 +303,28 @@ def get_all_email_analyses():
     conn.close()
     return [dict(row) for row in rows]
 
+def find_analysis_by_item_name(item_name: str):
+    """
+    Fuzzy-searches email_analysis by item_name.
+    Returns the most recent row so the caller can check compliance_status.
+    """
+    conn = get_db_connection()
+    c = conn.cursor()
+    words = [w for w in item_name.strip().split() if len(w) > 2]
+    if not words:
+        conn.close()
+        return None
+    where = " AND ".join(["item_name LIKE ?"] * len(words))
+    params = tuple(f"%{w}%" for w in words)
+    c.execute(
+        f"SELECT * FROM email_analysis WHERE {where} ORDER BY id DESC LIMIT 1",
+        params
+    )
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
 def save_email_analysis(email_id: str, analysis_data: dict, item_data: dict, vendor_data: dict):
     conn = get_db_connection()
     c = conn.cursor()
