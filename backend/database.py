@@ -1,5 +1,6 @@
 import sqlite3
 import json
+import re
 from datetime import datetime
 import os
 from pathlib import Path
@@ -158,27 +159,53 @@ def delete_table_data(table_name: str):
 # --- Email Analysis Features ---
 
 def get_item_by_name(query: str):
+    if not query:
+        return None
+        
     conn = get_db_connection()
     c = conn.cursor()
     
-    # Find matching item by splitting query into words and checking if all exist in name
-    # Helps match "Lithium-ion Battery Pack" to "Lithium-ion Battery Pack 75kWh Model X"
-    words = query.split()
-    if not words:
-        conn.close()
-        return None
-        
-    where_clauses = " AND ".join(["name LIKE ?"] * len(words))
-    params = tuple(f"%{w}%" for w in words)
-    
-    c.execute(f"SELECT * FROM items WHERE {where_clauses}", params)
+    # 1. Clean the query: Remove "(SKU: ...)" and other common patterns
+    # Example: "Product X (SKU: SKU-123)" -> "Product X"
+    clean_query = re.sub(r'\(?SKU:\s*[^)]+\)?', '', query, flags=re.IGNORECASE).strip()
+    # Also extract SKU if present for direct lookup
+    sku_match = re.search(r'SKU:\s*([A-Z0-9-]+)', query, flags=re.IGNORECASE)
+    extracted_sku = sku_match.group(1) if sku_match else None
+
+    # 2. Try Exact SKU match (extracted or original)
+    for s in [extracted_sku, clean_query, query]:
+        if s:
+            c.execute("SELECT * FROM items WHERE sku = ?", (s.strip(),))
+            row = c.fetchone()
+            if row:
+                conn.close()
+                return dict(row)
+
+    # 3. Fuzzy SKU match
+    for s in [extracted_sku, clean_query]:
+        if s and len(s) > 2:
+            c.execute("SELECT * FROM items WHERE sku LIKE ?", (f"%{s.strip()}%",))
+            row = c.fetchone()
+            if row:
+                conn.close()
+                return dict(row)
+
+    # 4. Fuzzy Name match (split words)
+    # Use the cleaned query for name matching
+    words = [w for w in clean_query.split() if len(w) > 1]
+    if words:
+        where_clauses = " AND ".join(["name LIKE ?"] * len(words))
+        params = tuple(f"%{w}%" for w in words)
+        c.execute(f"SELECT * FROM items WHERE {where_clauses}", params)
+        row = c.fetchone()
+        if row:
+            conn.close()
+            return dict(row)
+            
+    # 5. Fallback to simple name matching on original query
+    c.execute("SELECT * FROM items WHERE name LIKE ?", (f"%{clean_query}%",))
     row = c.fetchone()
     
-    if not row:
-        # Fallback to simple matching
-        c.execute("SELECT * FROM items WHERE name LIKE ?", (f"%{query}%",))
-        row = c.fetchone()
-        
     conn.close()
     return dict(row) if row else None
 
@@ -208,8 +235,58 @@ def get_email_analysis(email_id: str):
     c = conn.cursor()
     c.execute("SELECT * FROM email_analysis WHERE email_id = ?", (email_id,))
     row = c.fetchone()
+    
+    if not row:
+        conn.close()
+        return None
+        
+    analysis = dict(row)
+    
+    # ── Live Repair logic ───────────────────────────
+    # If the analysis exists but vendor/item mapping is missing (NULL or "N/A"), try to fix it now.
+    vendor_null_or_na = analysis.get('vendor_name') is None or str(analysis.get('vendor_name')).upper() == "N/A"
+    
+    if vendor_null_or_na and analysis.get('item_name'):
+        try:
+            item_data = get_item_by_name(analysis['item_name'])
+            if item_data:
+                vendor_data = get_vendor(item_data['default_vendor_id'])
+                if vendor_data:
+                    # Update counts and costs
+                    quantity = analysis.get('item_quantity', 0)
+                    unit_price = item_data.get('unit_price', 0)
+                    total_cost = quantity * unit_price
+                    
+                    # Update the record in DB
+                    c.execute('''
+                        UPDATE email_analysis SET
+                            item_id = ?, item_name = ?, item_unit_price = ?,
+                            vendor_id = ?, vendor_name = ?, vendor_email = ?, vendor_phone = ?,
+                            total_cost = ?
+                        WHERE email_id = ?
+                    ''', (
+                        item_data.get('id'), item_data.get('name'), unit_price,
+                        vendor_data.get('id'), vendor_data.get('name'), vendor_data.get('email'), vendor_data.get('phone'),
+                        total_cost, email_id
+                    ))
+                    conn.commit()
+                    
+                    # Update the return object
+                    analysis.update({
+                        'item_id': item_data.get('id'),
+                        'item_name': item_data.get('name'),
+                        'item_unit_price': unit_price,
+                        'vendor_id': vendor_data.get('id'),
+                        'vendor_name': vendor_data.get('name'),
+                        'vendor_email': vendor_data.get('email'),
+                        'vendor_phone': vendor_data.get('phone'),
+                        'total_cost': total_cost
+                    })
+        except Exception as e:
+            print(f"Error during live repair of analysis '{email_id}': {e}")
+            
     conn.close()
-    return dict(row) if row else None
+    return analysis
 
 def get_all_email_analyses():
     """Returns all email_analysis rows for standalone compliance checking."""
