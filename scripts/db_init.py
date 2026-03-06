@@ -182,37 +182,6 @@ conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_ve
 conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_vendor_id) VALUES (48,'Airbag Module Front Model X','AIRBAG-FR-X','unit',500,13)")
 conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_vendor_id) VALUES (49,'Central Control Unit Model X','CCU-MAIN-X','unit',2200,19)")
 conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_vendor_id) VALUES (50,'Telematics Control Unit Model X','TCU-CON-X','unit',1800,19)")
-
-# ---------------- Budgets (Expanded) ----------------
-conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Battery Dept','2025-Q3',5000000,500000)")
-conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Motor Assembly','2025-Q3',4000000,250000)")
-conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Glass & Interiors','2025-Q3',2000000,100000)")
-conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Electronics','2025-Q3',3000000,200000)")
-conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Chassis & Wheels','2025-Q3',2000000,150000)")
-conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('R&D','2025-Q3',5000000,800000)")
-conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Procurement','2025-Q3',1000000,100000)")
-conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Engineering','2025-Q3',5000000,200000)")
-conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('IT','2025-Q3',3000000,150000)")
-conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Operations','2025-Q3',4000000,500000)")
-
-# ---------------- Policies ----------------
-conn.execute("INSERT OR IGNORE INTO policies(key,value) VALUES ('max_single_order_amount','100000')")
-conn.execute("INSERT OR IGNORE INTO policies(key,value) VALUES ('min_vendor_score','80')")
-conn.execute("INSERT OR IGNORE INTO policies(key,value) VALUES ('max_open_orders','500')")
-
-# ---------------- Inventory (Expanded Capacity) ----------------
-# Existing items expanded
-conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (1,500,10000,1000)")
-conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (2,400,8000,800)")
-# ... (Assuming existing inserts are handled by IGNORE, but we want to UPDATE capacity if exists? IGNORE skips. So I should probably DELETE and re-insert or assume clean slate. The script does CREATE TABLE IF NOT EXISTS. If DB exists, these INSERT OR IGNOREs do nothing for existing IDs.
-# To ensure expansion, I will assume the user might delete the DB or I should use REPLACE or update the values.)
-# Since this is an init script, I will just add *new* items.
-# But user said "expand compliance limits in order to support more storage". If DB exists, I might need to run an UPDATE.
-# I'll add an UPDATE at the end for existing items to boost capacity.
-
-# Removed New Vendors block (moved to top with phone data)
-
-# New Items (51-100)
 conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_vendor_id) VALUES (51,'GPU Module Drive Orin','GPU-ORIN-X','unit',1500,21)")
 conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_vendor_id) VALUES (52,'Vision Processor EyeQ5','VIS-EYEQ5','unit',800,22)")
 conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_vendor_id) VALUES (53,'Snapdragon Ride SoC','SOC-SD-RIDE','unit',1200,23)")
@@ -243,6 +212,37 @@ conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_ve
 conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_vendor_id) VALUES (78,'Tow Hitch Assembly','HITCH-TOW-ASM','unit',400,15)")
 conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_vendor_id) VALUES (79,'Mud Flap Set','FLAP-MUD-SET','set',60,15)")
 conn.execute("INSERT OR IGNORE INTO items(id,name,sku,unit,unit_price,default_vendor_id) VALUES (80,'Car Cover Weatherproof','COVER-CAR-WP','unit',120,20)")
+# ---------------- Budgets (Expanded) ----------------
+conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Battery Dept','2025-Q3',5000000,500000)")
+conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Motor Assembly','2025-Q3',4000000,250000)")
+conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Glass & Interiors','2025-Q3',2000000,100000)")
+conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Electronics','2025-Q3',3000000,200000)")
+conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Chassis & Wheels','2025-Q3',2000000,150000)")
+conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('R&D','2025-Q3',5000000,800000)")
+conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Procurement','2025-Q3',1000000,100000)")
+conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Engineering','2025-Q3',5000000,200000)")
+conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('IT','2025-Q3',3000000,150000)")
+conn.execute("INSERT OR IGNORE INTO budgets(dept,period,limit_amount,used_amount) VALUES ('Operations','2025-Q3',4000000,500000)")
+
+# ---------------- Policies ----------------
+conn.execute("INSERT OR IGNORE INTO policies(key,value) VALUES ('max_single_order_amount','100000')")
+conn.execute("INSERT OR IGNORE INTO policies(key,value) VALUES ('min_vendor_score','80')")
+conn.execute("INSERT OR IGNORE INTO policies(key,value) VALUES ('max_open_orders','500')")
+
+# ---------------- Inventory (Expanded Capacity) ----------------
+# Existing items expanded
+conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (1,500,10000,1000)")
+conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (2,400,8000,800)")
+# ... (Assuming existing inserts are handled by IGNORE, but we want to UPDATE capacity if exists? IGNORE skips. So I should probably DELETE and re-insert or assume clean slate. The script does CREATE TABLE IF NOT EXISTS. If DB exists, these INSERT OR IGNOREs do nothing for existing IDs.
+# To ensure expansion, I will assume the user might delete the DB or I should use REPLACE or update the values.)
+# Since this is an init script, I will just add *new* items.
+# But user said "expand compliance limits in order to support more storage". If DB exists, I might need to run an UPDATE.
+# I'll add an UPDATE at the end for existing items to boost capacity.
+
+# Removed New Vendors block (moved to top with phone data)
+
+
+
 
 # New Inventory (51-80)
 conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (51,50,500,100)")

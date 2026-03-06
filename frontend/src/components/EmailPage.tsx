@@ -29,6 +29,7 @@ import {
     Loader2,
     ArrowUpDown,
     Filter,
+    Download,
 } from "lucide-react";
 import {
     DropdownMenu,
@@ -99,6 +100,7 @@ export function EmailPage({
         setProcComplianceStatus(analysisData.compliance_status || "Pending");
         setProcExplanation(analysisData.compliance_explanation || "");
         setProcOrderId(analysisData.order_id || null);
+        setProcPdfPath(analysisData.pdf_path || null);
         setIsProcurementOpen(true);
     };
 
@@ -504,7 +506,14 @@ export function EmailPage({
                                                     <div className="text-sm p-3 rounded bg-green-500/10 border border-green-500/20 text-green-600 flex flex-col gap-2">
                                                         <span>Order #{procOrderId} created successfully!</span>
                                                         {procPdfPath && (
-                                                            <a href="#" className="font-semibold underline">Download PO PDF</a>
+                                                            <a
+                                                                href={`http://localhost:8000${procPdfPath.startsWith('/') ? '' : '/'}${procPdfPath}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="font-semibold underline text-blue-600 hover:text-blue-500 flex items-center gap-1"
+                                                            >
+                                                                <Download className="h-4 w-4" /> Download PO PDF
+                                                            </a>
                                                         )}
                                                     </div>
                                                 ) : (

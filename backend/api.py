@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+import os
+from pathlib import Path
 from backend.graph import app as workflow
 
 app = FastAPI(title="Multi-Agent Procurement System API")
@@ -13,6 +16,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Ensure orders directory exists and mount it as static
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+ORDERS_DIR = PROJECT_ROOT / "orders"
+ORDERS_DIR.mkdir(exist_ok=True)
+app.mount("/static/orders", StaticFiles(directory=str(ORDERS_DIR)), name="orders")
 
 class ChatRequest(BaseModel):
     input_text: str
@@ -286,9 +295,25 @@ async def generate_procurement_order(email_id: str):
         conn.close()
         
         order_data = db_get_order_by_id(order_id)
+        if order_data:
+            order_data['order_id'] = order_id
+            
+        # Fix: ensure order_data for PDF generator contains everything
         pdf_path = generate_order_pdf(order_data)
         
-        return {"status": "success", "order_id": order_id, "pdf_path": pdf_path}
+        # Save pdf_path back to orders table
+        conn = get_db_connection()
+        conn.execute("UPDATE orders SET pdf_path = ? WHERE id = ?", (pdf_path, order_id))
+        conn.commit()
+        conn.close()
+        
+        # Return URL-friendly path
+        filename = os.path.basename(pdf_path)
+        return {
+            "status": "success", 
+            "order_id": order_id, 
+            "pdf_path": f"/static/orders/{filename}"
+        }
     except HTTPException as he:
         raise he
     except Exception as e:

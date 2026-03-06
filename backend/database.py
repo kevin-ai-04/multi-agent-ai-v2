@@ -233,7 +233,13 @@ def get_unanalyzed_emails():
 def get_email_analysis(email_id: str):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT * FROM email_analysis WHERE email_id = ?", (email_id,))
+    # Join with orders to get pdf_path if it exists
+    c.execute("""
+        SELECT ea.*, o.pdf_path 
+        FROM email_analysis ea
+        LEFT JOIN orders o ON ea.order_id = o.id
+        WHERE ea.email_id = ?
+    """, (email_id,))
     row = c.fetchone()
     
     if not row:

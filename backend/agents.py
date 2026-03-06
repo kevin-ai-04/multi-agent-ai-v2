@@ -402,12 +402,12 @@ def generate_po_content(order: dict) -> str:
     prompt = f"""You are a professional procurement officer. Write a formal Purchase Order document.
 
 ORDER DETAILS:
-- PO Number: {order.get('order_id', 'N/A')}
+- PO Number: {order.get('order_id', order.get('id', 'N/A'))}
 - Date: {order.get('created_at', 'Today')}
 - Item: {order.get('item_name', 'N/A')}
-- Quantity: {order.get('quantity', 'N/A')} units
+- Quantity: {order.get('qty', order.get('quantity', 'N/A'))} units
 - Unit Price: ${order.get('unit_price', 0):,.2f}
-- Total Amount: ${order.get('total_cost', 0):,.2f}
+- Total Amount: ${order.get('amount', order.get('total_cost', 0)):,.2f}
 - Vendor: {order.get('vendor_name', 'N/A')}
 - Vendor Email: {order.get('vendor_email', 'N/A')}
 - Priority: {order.get('priority', 'Standard')}
@@ -468,7 +468,7 @@ def generate_order_pdf(order: dict, output_dir: str = "orders") -> str:
     from datetime import datetime
 
     os.makedirs(output_dir, exist_ok=True)
-    order_id  = order.get('order_id', 'unknown')
+    order_id  = order.get('order_id', order.get('id', 'unknown'))
     file_path = os.path.join(output_dir, f"order_{order_id}.pdf")
 
     # Generate PO content via LLM and sanitize Unicode characters
@@ -497,9 +497,9 @@ def generate_order_pdf(order: dict, output_dir: str = "orders") -> str:
     pdf.set_text_color(30, 30, 30)
     fields = [
         ("Item",          order.get('item_name', 'N/A')),
-        ("Quantity",      str(order.get('quantity', 'N/A'))),
+        ("Quantity",      str(order.get('qty', order.get('quantity', 'N/A')))),
         ("Unit Price",    f"${order.get('unit_price', 0):,.2f}"),
-        ("Total Amount",  f"${order.get('total_cost', 0):,.2f}"),
+        ("Total Amount",  f"${order.get('amount', order.get('total_cost', 0)):,.2f}"),
         ("Vendor",        order.get('vendor_name', 'N/A')),
         ("Vendor Email",  order.get('vendor_email', 'N/A')),
         ("Priority",      order.get('priority', 'Standard')),
