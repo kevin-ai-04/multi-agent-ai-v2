@@ -1,0 +1,31 @@
+id,name,email,phone,approved,ext_score
+1,Tesla Energy,sales@teslaenergy.com,555-0199,1,90.0
+2,LG Chem,contact@lgchem.com,555-0288,1,88.0
+3,Panasonic,supply@panasonic.com,555-0377,1,85.0
+4,Bosch Mobility,orders@bosch.com,555-0466,1,87.0
+5,CATL,info@catl.com,555-0555,1,92.0
+6,BYD Components,orders@byd.com,555-0644,1,89.0
+7,Continental AG,sales@continental.com,555-0733,1,84.0
+8,Valeo,orders@valeo.com,555-0822,1,83.0
+9,Nippon Glass,supply@nippon-glass.jp,555-0911,1,86.0
+10,ZF Friedrichshafen,sales@zf.com,555-1000,1,82.0
+11,Delphi Tech,orders@delphi.com,555-1199,1,80.0
+12,Magna EV Systems,supply@magna.com,555-1288,1,81.0
+13,Samsung SDI,orders@samsung-sdi.com,555-1377,1,91.0
+14,Hitachi Automotive,sales@hitachi-auto.com,555-1466,1,85.0
+15,Infineon Tech,orders@infineon.com,555-1555,1,87.0
+16,Texas Instruments,supply@ti.com,555-1644,1,86.0
+17,Aptiv,contact@aptiv.com,555-1733,1,84.0
+18,Lear Corp,sales@lear.com,555-1822,1,83.0
+19,Harman Automotive,orders@harman.com,555-1911,1,82.0
+20,Acme Corp,sales@acme.example,555-2000,1,82.0
+21,NVIDIA Auto,sales@nvidia-auto.com,555-2100,1,95.0
+22,Intel Mobileye,orders@mobileye.com,555-2200,1,93.0
+23,Qualcomm Auto,supply@qualcomm.com,555-2300,1,90.0
+24,Brembo S.p.A.,sales@brembo.com,555-2400,1,89.0
+25,Ohlins Racing,orders@ohlins.com,555-2500,1,88.0
+26,Recaro Automotive,supply@recaro.com,555-2600,1,87.0
+27,Sparco,sales@sparco.com,555-2700,1,85.0
+28,Hella GmbH,orders@hella.com,555-2800,1,86.0
+29,Denso Corp,sales@denso.com,555-2900,1,88.0
+30,Aisin Seiki,supply@aisin.com,555-3000,1,84.0
