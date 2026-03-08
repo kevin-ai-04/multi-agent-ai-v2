@@ -361,6 +361,30 @@ def save_email_analysis(email_id: str, analysis_data: dict, item_data: dict, ven
 
 # --- Order Management ---
 
+def get_department_for_item(item_name: str) -> str:
+    """Maps an item name to its corresponding budget department based on semantic keywords."""
+    if not item_name: return 'Operations'
+    name_lower = item_name.lower()
+    
+    if any(kw in name_lower for kw in ['battery', 'lithium', 'cell', 'volt']):
+        return 'Battery Dept'
+    if any(kw in name_lower for kw in ['motor', 'engine', 'stator', 'rotor']):
+        return 'Motor Assembly'
+    if any(kw in name_lower for kw in ['glass', 'windshield', 'mirror', 'window', 'seat', 'mat', 'interior', 'leather', 'dashboard']):
+        return 'Glass & Interiors'
+    if any(kw in name_lower for kw in ['inverter', 'converter', 'charger', 'bms', 'ecu', 'gpu', 'sensor', 'radar', 'lidar', 'display', 'screen', 'module', 'controller', 'chip', 'processor', 'telematics']):
+        return 'Electronics'
+    if any(kw in name_lower for kw in ['wheel', 'tire', 'brake', 'pad', 'disc', 'suspension', 'strut', 'shock', 'chassis', 'rack']):
+        return 'Chassis & Wheels'
+    if any(kw in name_lower for kw in ['software', 'license', 'r&d', 'research']):
+        return 'R&D'
+    if any(kw in name_lower for kw in ['pump', 'radiator', 'heater', 'ac', 'cooling', 'fluid', 'washer', 'wiper']):
+        return 'Engineering'
+    if any(kw in name_lower for kw in ['procurement', 'admin', 'service']):
+        return 'Procurement'
+        
+    return 'Operations'  # Fallback department
+
 def create_order(item_id: int, vendor_id: int, qty: int, amount: float) -> int:
     """Inserts a DRAFT order. Returns the new order id."""
     conn = get_db_connection()
@@ -415,18 +439,26 @@ def approve_order(order_id: int) -> bool:
     conn = get_db_connection()
     c = conn.cursor()
     try:
-        c.execute("SELECT amount FROM orders WHERE id = ?", (order_id,))
+        c.execute("SELECT amount, item_id FROM orders WHERE id = ?", (order_id,))
         row = c.fetchone()
         if not row:
             raise ValueError(f"Order {order_id} not found.")
         amount = row['amount']
+        item_id = row['item_id']
         c.execute("UPDATE orders SET status = 'APPROVED' WHERE id = ?", (order_id,))
-        c.execute("SELECT dept, period FROM budgets ORDER BY period DESC LIMIT 1")
+        
+        # Determine semantic budget department
+        c.execute("SELECT name FROM items WHERE id = ?", (item_id,))
+        item_row = c.fetchone()
+        item_name = item_row['name'] if item_row else ""
+        dept = get_department_for_item(item_name)
+        
+        c.execute("SELECT period FROM budgets WHERE dept = ? ORDER BY period DESC LIMIT 1", (dept,))
         budget = c.fetchone()
         if budget:
             c.execute(
                 "UPDATE budgets SET used_amount = used_amount + ? WHERE dept = ? AND period = ?",
-                (amount, budget['dept'], budget['period'])
+                (amount, dept, budget['period'])
             )
         conn.commit()
         return True

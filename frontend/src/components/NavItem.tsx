@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils"
 import { LucideIcon } from "lucide-react"
 
 interface NavItemProps {
-    view: "home" | "emails" | "settings" | "dashboard" | "docs" | "database";
+    view: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order";
     icon: LucideIcon;
     label: string;
-    activeView: "home" | "emails" | "settings" | "dashboard" | "docs" | "database";
-    setActiveView: (view: "home" | "emails" | "settings" | "dashboard" | "docs" | "database") => void;
+    activeView: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order";
+    setActiveView: (view: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order") => void;
     isCollapsed: boolean;
 }
 

@@ -6,6 +6,7 @@ import { EmailPage } from "@/components/EmailPage"
 import { Dashboard } from "@/components/Dashboard"
 import { DocsPage } from "@/components/DocsPage"
 import { DatabasePage } from "@/components/DatabasePage"
+import { NewOrderPage } from "@/components/NewOrderPage"
 import "@/index.css"
 import {
     DropdownMenu,
@@ -23,7 +24,7 @@ function App() {
 
     // UI State
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-    const [activeView, setActiveView] = useState<"home" | "emails" | "settings" | "dashboard" | "docs" | "database">("home")
+    const [activeView, setActiveView] = useState<"home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order">("home")
     const [emailFolder, setEmailFolder] = useState("inbox")
 
     // Email Filter State (Lifted for LLM control)
@@ -86,6 +87,9 @@ function App() {
                 setActiveView={setActiveView}
                 isCollapsed={isSidebarCollapsed}
                 setIsCollapsed={setIsSidebarCollapsed}
+                onNewOrder={() => {
+                    setActiveView("new_order");
+                }}
             />
 
             <main className="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300">
@@ -167,6 +171,9 @@ function App() {
 
                         {/* Database View */}
                         {activeView === 'database' && <DatabasePage />}
+
+                        {/* New Order Form View */}
+                        {activeView === 'new_order' && <NewOrderPage />}
 
                         {/* Settings View */}
                         {activeView === 'settings' && (

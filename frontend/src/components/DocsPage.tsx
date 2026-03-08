@@ -20,9 +20,7 @@ export function DocsPage() {
                         <h1 className="text-4xl font-bold tracking-tight text-foreground">
                             Multi-Agent Procurement Management
                         </h1>
-                        <p className="text-lg text-muted-foreground leading-relaxed">
-                            v26.02.28-002 (Fully Integrated Compliance & PDF Generation)
-                        </p>
+                        v26.04.01-002 (Inline Chat Procurement & Semantic Budgets)
                         <p className="text-muted-foreground leading-relaxed">
                             This system is a sophisticated demonstration of a <strong>Multi-Agent AI Architecture</strong> tailored for autonomous procurement workflows.
                             It utilizes a localized orchestration layer to manage specialized agents (Email, Compliance, Orders, Forecasting), ensuring accuracy, policy adherence, and offline capability.
@@ -83,8 +81,9 @@ export function DocsPage() {
                                 An autonomous inbox processor designed to transform unstructured conversational emails into formatted procurement data.
                             </p>
                             <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
-                                <li><strong>Information Extraction:</strong> Uses an LLM constrained by Pydantic schemas to pull out `item_name`, `quantity`, and temporal requirements (e.g., "Need in 5 days").</li>
-                                <li><strong>Database Linking:</strong> Hooks the extracted text to precise Database records using text matching, fetching unit costs and associating reliable vendor profiles.</li>
+                                <li><strong>Information Extraction:</strong> Uses an LLM constrained by Pydantic schemas to pull out `item_name`, `quantity`, and temporal requirements.</li>
+                                <li><strong>Intelligent Item Matching:</strong> Employs advanced SKU extraction (e.g., from strings like <code>"Model X (SKU: AC-EV-X)"</code>) and word-split fuzzy matching to ensure 99% accuracy in database association.</li>
+                                <li><strong>Live Repair Mechanism:</strong> Automatically detects missing ("N/A") data in historical records upon access, re-running lookup logic and saving fixed data back to the database in real-time.</li>
                                 <li><strong>Mathematical Priority:</strong> Automatically calculates Urgency Priority (High/Medium/Low) strictly based on the requested temporal delivery windows.</li>
                             </ul>
                         </Card>
@@ -98,7 +97,8 @@ export function DocsPage() {
                             </p>
                             <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
                                 <li><strong>Gatekeeper Logic (3 Rules):</strong> Enforces Inventory Capacity limits (<code>max_capacity</code>), Department Budget constraints (<code>limit_amount</code>), and Policy regulations (<code>max_single_order_amount</code>, vendor approval rating).</li>
-                                <li><strong>LLM Explainer:</strong> Processes rule-based pass/fail outcomes into natural, reader-friendly prose, translating technical "Failed on vendor_score &lt; 70" into actionable plain English recommendations (e.g., "Consider switching to an approved vendor").</li>
+                                <li><strong>Semantic Budget Routing:</strong> Automatically categorizes and maps requested items to their correct corporate department (e.g. "Lithium Battery" &rarr; "Battery Dept") ensuring accurate budget deduction.</li>
+                                <li><strong>LLM Explainer:</strong> Processes rule-based pass/fail outcomes into natural, reader-friendly prose, translating technical "Failed on vendor_score &lt; 70" into actionable plain English recommendations.</li>
                                 <li><strong>Automated Drafting:</strong> Successfully compliant emails automatically generate <code>DRAFT</code> status entries in the <code>orders</code> table.</li>
                             </ul>
                         </Card>
@@ -112,8 +112,10 @@ export function DocsPage() {
                             </p>
                             <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
                                 <li><strong>LLM Letter Drafting:</strong> Generates context-aware formal textual PO bodies utilizing specific database inputs (items, units, vendor names).</li>
-                                <li><strong>Fpdf2 PDF Generation:</strong> Uses the <code>fpdf2</code> library to compile structured graphical PDF documents (Header, Summary Tables, Formal Body, Footers).</li>
+                                <li><strong>Inline Chat Procurement:</strong> Purchase orders are reviewed, quantified, and finalized natively inside interactive chat message bubbles rather than disruptive pop-up modals.</li>
+                                <li><strong>Robust PDF Generation:</strong> Fixed numerical filenaming (e.g., <code>order_17.pdf</code>) and flexible data mapping to ensure quantity and amount fields are always accurate.</li>
                                 <li><strong>Unicode Sanitization:</strong> Employs intelligent character cleaning strings (e.g., swapping em dashes `—` for hyphens) to ensure absolute stability under strict Helvetica font encoding formats.</li>
+                                <li><strong>Direct UI Downloads:</strong> Integrated direct download links into the Inline Procurement widget, served via the backend's static file engine.</li>
                             </ul>
                         </Card>
 
@@ -250,6 +252,38 @@ export function DocsPage() {
                                     <h4 className="font-mono font-semibold text-green-500">POST /procurement/{"{email_id}"}/order</h4>
                                     <p className="text-sm text-foreground/90 mt-1">
                                         Initiates actual purchase order creation. Only executes if the row's `compliance_status` is `Passed`. Drops a record in the `orders` table and triggers local PDF file generation.
+                                    </p>
+                                </div>
+                            </Card>
+                            <Card className="p-5 flex gap-4 items-start bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10">
+                                <div>
+                                    <h4 className="font-mono font-semibold text-sky-500">POST /procurement/compliance-by-item</h4>
+                                    <p className="text-sm text-foreground/90 mt-1">
+                                        Runs compliance checks for the most recent email analysis matching a given <code>item_name</code> payload. Returns detailed pass/fail justification.
+                                    </p>
+                                </div>
+                            </Card>
+                            <Card className="p-5 flex gap-4 items-start bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10">
+                                <div>
+                                    <h4 className="font-mono font-semibold text-emerald-500">POST /procurement/order-by-item</h4>
+                                    <p className="text-sm text-foreground/90 mt-1">
+                                        Creates an order and generates its PDF explicitly by checking the latest compliant request matching the <code>item_name</code> payload.
+                                    </p>
+                                </div>
+                            </Card>
+                            <Card className="p-5 flex gap-4 items-start bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10">
+                                <div>
+                                    <h4 className="font-mono font-semibold text-amber-500">POST /orders/{"{order_id}"}/generate-pdf</h4>
+                                    <p className="text-sm text-foreground/90 mt-1">
+                                        Regenerates and returns the PDF Purchase Order for a specific historical order ID, bypassing the standard execution pipeline explicitly for direct UI downloads.
+                                    </p>
+                                </div>
+                            </Card>
+                            <Card className="p-5 flex gap-4 items-start bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10">
+                                <div>
+                                    <h4 className="font-mono font-semibold text-indigo-500">POST /orders/manual</h4>
+                                    <p className="text-sm text-foreground/90 mt-1">
+                                        Creates a manual order bypassing the email extraction pipeline. Executes compliance and PDF generation automatically in one flow, returning the immediate result for the Inline UI.
                                     </p>
                                 </div>
                             </Card>

@@ -101,7 +101,7 @@ def convert_text_to_num(input_str: str) -> str:
 from typing import List, Optional, Literal
 
 class UIAction(BaseModel):
-    action_type: Literal["redirect", "set_filter", "popup", "trigger_api"] = Field(description="The type of UI action to perform.")
+    action_type: Literal["redirect", "set_filter", "popup", "trigger_api", "open_inline_procurement"] = Field(description="The type of UI action to perform.")
     params: dict = Field(default_factory=dict, description="The parameters for the UI action (e.g., view name for redirect, filter values for set_filter, endpoint and label for trigger_api).")
 
 class OrchestrationResponse(BaseModel):
@@ -134,11 +134,10 @@ def orchestrator_router(input_str: str) -> OrchestrationResponse:
         - Endpoint for compliance by email id: "/procurement/<id>/compliance"
         - Endpoint for order PDF by order id: "/orders/<id>/generate-pdf"
         - If ID is missing, ask the user via chat_response.
-    - 'decision': For ORDER or COMPLIANCE requests by ITEM NAME (e.g. "order mud flap set", "compliance for lithium battery"):
-        - Set to 'unknown' and return TWO trigger_api actions in sequence:
-          1. compliance: POST /procurement/compliance-by-item  payload: {{"item_name": "<extracted item name>"}}  label: "1. Run Compliance – <item name>"
-          2. order:      POST /procurement/order-by-item       payload: {{"item_name": "<extracted item name>"}}  label: "2. Generate Order – <item name>"
-        - chat_response should say: "Run compliance first, then generate the order."
+    - 'decision': For ORDER or COMPLIANCE requests by ITEM NAME (e.g. "order mud flap set", "compliance for lithium battery") or manual orders:
+        - Set 'decision' to 'unknown'.
+        - Set 'ui_actions' to: [{{ "action_type": "open_inline_procurement", "params": {{ "item_name": "<extracted item name>", "mode": "manual" }} }}]
+        - 'chat_response' should say: "I can help you with that order. Please review the details below."
     - 'decision': For navigation/viewing (show, list, open, go to inbox, display), use 'unknown' + ui_actions redirect.
     - 'decision': For greetings/banter/capability questions, use 'unknown' + chat_response.
     
@@ -146,8 +145,8 @@ def orchestrator_router(input_str: str) -> OrchestrationResponse:
     - User: "analyze emails": {{"decision": "email", "chat_response": "Starting extraction pipeline...", "ui_actions": []}}
     - User: "check compliance for 14": {{"decision": "unknown", "chat_response": "Triggering compliance for email 14.", "ui_actions": [{{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/14/compliance", "method": "POST", "label": "Run Compliance (14)"}}}}]}}
     - User: "generate pdf for order 14": {{"decision": "unknown", "chat_response": "Click below to generate the PDF for order 14.", "ui_actions": [{{"action_type": "trigger_api", "params": {{"endpoint": "/orders/14/generate-pdf", "method": "POST", "label": "Generate PDF (Order 14)"}}}}]}}
-    - User: "order mud flap set": {{"decision": "unknown", "chat_response": "Run compliance first, then generate the order.", "ui_actions": [{{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/compliance-by-item", "method": "POST", "payload": {{"item_name": "mud flap set"}}, "label": "1. Run Compliance – Mud Flap Set"}}}}, {{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/order-by-item", "method": "POST", "payload": {{"item_name": "mud flap set"}}, "label": "2. Generate Order – Mud Flap Set"}}}}]}}
-    - User: "order lithium battery": {{"decision": "unknown", "chat_response": "Run compliance first, then generate the order.", "ui_actions": [{{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/compliance-by-item", "method": "POST", "payload": {{"item_name": "lithium battery"}}, "label": "1. Run Compliance – Lithium Battery"}}}}, {{"action_type": "trigger_api", "params": {{"endpoint": "/procurement/order-by-item", "method": "POST", "payload": {{"item_name": "lithium battery"}}, "label": "2. Generate Order – Lithium Battery"}}}}]}}
+    - User: "order mud flap set": {{"decision": "unknown", "chat_response": "I can help you with that order. Please review the details below.", "ui_actions": [{{"action_type": "open_inline_procurement", "params": {{"item_name": "mud flap set", "mode": "manual"}}}}]}}
+    - User: "order lithium battery": {{"decision": "unknown", "chat_response": "I can help you with that order. Please review the details below.", "ui_actions": [{{"action_type": "open_inline_procurement", "params": {{"item_name": "lithium battery", "mode": "manual"}}}}]}}
     - User: "show me high priority emails": {{"decision": "unknown", "chat_response": null, "ui_actions": [{{"action_type": "redirect", "params": {{"view": "emails"}}}}, {{"action_type": "set_filter", "params": {{"priority": "High"}}}}]}}
     - User: "convert forty two": {{"decision": "text2num", "chat_response": null, "ui_actions": []}}
     
@@ -296,22 +295,24 @@ def run_gatekeeper_checks(analysis: dict) -> dict:
             warnings.append("Inventory: Item not found in catalog — check skipped.")
 
         # ── Check 2: Budget ─────────────────────────────
-        c.execute("SELECT dept, period, limit_amount, used_amount FROM budgets ORDER BY period DESC LIMIT 1")
+        from backend.database import get_department_for_item
+        dept = get_department_for_item(item_name)
+        c.execute("SELECT period, limit_amount, used_amount FROM budgets WHERE dept = ? ORDER BY period DESC LIMIT 1", (dept,))
         budget = c.fetchone()
         if budget:
             remaining = budget['limit_amount'] - budget['used_amount']
             if total_cost > remaining:
                 failures.append(
                     f"Budget: Order cost ${total_cost:,.2f} exceeds remaining budget "
-                    f"${remaining:,.2f} for dept '{budget['dept']}' ({budget['period']})."
+                    f"${remaining:,.2f} for dept '{dept}' ({budget['period']})."
                 )
             else:
                 warnings.append(
                     f"Budget: ${total_cost:,.2f} within budget. Remaining after order: "
-                    f"${remaining - total_cost:,.2f} ({budget['dept']}, {budget['period']})."
+                    f"${remaining - total_cost:,.2f} ({dept}, {budget['period']})."
                 )
         else:
-            warnings.append("Budget: No budget record found — check skipped.")
+            warnings.append(f"Budget: No budget record found for '{dept}' — check skipped.")
 
         # ── Check 3: Policies ───────────────────────────
         c.execute("SELECT value FROM policies WHERE key = 'max_single_order_amount'")

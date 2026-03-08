@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import os
 from pathlib import Path
+import datetime
 from backend.graph import app as workflow
 
 app = FastAPI(title="Multi-Agent Procurement System API")
@@ -239,6 +240,103 @@ async def get_email_analysis_endpoint(email_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/procurement/manual/compliance")
+async def manual_compliance_check(payload: dict):
+    from backend.database import get_item_by_name, get_vendor
+    from backend.agents import run_gatekeeper_checks, explain_compliance_result
+    
+    item_name = payload.get("item_name")
+    quantity = payload.get("quantity", 1)
+    expected_date_str = payload.get("expected_date")  # YYYY-MM-DD
+    summary = payload.get("summary", "")
+    
+    if not item_name:
+        raise HTTPException(status_code=400, detail="item_name is required")
+        
+    item = get_item_by_name(item_name)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+        
+    total_cost = item['unit_price'] * quantity
+    vendor = get_vendor(item.get('default_vendor_id'))
+    
+    # Calculate priority based on expected_date
+    priority = "Normal"
+    if expected_date_str:
+        try:
+            expected_date = datetime.datetime.strptime(expected_date_str, "%Y-%m-%d").date()
+            today = datetime.date.today()
+            days_available = (expected_date - today).days
+            if days_available <= 7:
+                priority = "High"
+            elif days_available <= 30:
+                priority = "Medium"
+            else:
+                priority = "Low"
+        except ValueError:
+            pass
+            
+    fake_analysis = {
+        "item_id": item['id'],
+        "item_name": item['name'],
+        "vendor_id": vendor['id'] if vendor else None,
+        "quantity": quantity,
+        "total_cost": total_cost,
+        "priority": priority,
+        "summary": summary
+    }
+    
+    gate = run_gatekeeper_checks(fake_analysis)
+    explanation = explain_compliance_result(fake_analysis, gate)
+    
+    return {
+        "status": "success",
+        "passed": gate['passed'],
+        "explanation": explanation,
+        "computed_priority": priority,
+        "total_cost": total_cost,
+        "fake_analysis_context": fake_analysis
+    }
+
+@app.post("/procurement/manual/order")
+async def manual_order_create(payload: dict):
+    from backend.database import create_order, get_order_by_id as db_get_order_by_id
+    from backend.agents import generate_order_pdf
+    
+    context = payload.get("context")
+    if not context:
+        raise HTTPException(status_code=400, detail="Order context is required (must run compliance first).")
+        
+    try:
+        order_id = create_order(
+            item_id=context['item_id'],
+            vendor_id=context['vendor_id'],
+            qty=context['quantity'],
+            amount=context['total_cost']
+        )
+        
+        order_data = db_get_order_by_id(order_id)
+        if order_data:
+            order_data['priority'] = context.get('priority', 'Normal')
+            
+        pdf_path = generate_order_pdf(order_data)
+        
+        from backend.database import get_db_connection
+        conn = get_db_connection()
+        conn.execute("UPDATE orders SET pdf_path = ? WHERE id = ?", (pdf_path, order_id))
+        conn.commit()
+        conn.close()
+        
+        import os
+        filename = os.path.basename(pdf_path)
+        return {
+            "status": "success",
+            "order_id": order_id,
+            "pdf_path": f"/static/orders/{filename}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/procurement/{email_id}/compliance")
 async def check_compliance(email_id: str):
     from backend.agents import run_gatekeeper_checks, explain_compliance_result
@@ -403,6 +501,17 @@ async def order_by_item_name(payload: dict):
         "pdf_path": pdf_path,
         "message": f"Order #{order_id} created and PDF generated."
     }
+
+@app.get("/items/lookup")
+async def lookup_item(name: str):
+    """Looks up an item by name for manual order creation."""
+    from backend.database import get_item_by_name, get_vendor
+    item = get_item_by_name(name)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    vendor = get_vendor(item['default_vendor_id']) if item.get('default_vendor_id') else None
+    return {"status": "success", "item": item, "vendor": vendor}
+
 
 
 # --- Order Management API ---
