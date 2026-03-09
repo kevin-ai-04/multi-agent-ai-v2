@@ -7,6 +7,8 @@ import { Dashboard } from "@/components/Dashboard"
 import { DocsPage } from "@/components/DocsPage"
 import { DatabasePage } from "@/components/DatabasePage"
 import { NewOrderPage } from "@/components/NewOrderPage"
+import { OrdersPage } from "@/components/OrdersPage"
+import { ForecastPage } from "@/components/ForecastPage"
 import "@/index.css"
 import {
     DropdownMenu,
@@ -24,7 +26,7 @@ function App() {
 
     // UI State
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-    const [activeView, setActiveView] = useState<"home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order">("home")
+    const [activeView, setActiveView] = useState<"home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast">("home")
     const [emailFolder, setEmailFolder] = useState("inbox")
 
     // Email Filter State (Lifted for LLM control)
@@ -123,8 +125,10 @@ function App() {
                                 {activeView === 'home' && 'Multi-Agent Procurement System'}
                                 {activeView === 'dashboard' && 'Neural Dashboard'}
                                 {activeView === 'docs' && 'Documentation'}
+                                {activeView === 'orders' && 'Purchase Orders'}
                                 {activeView === 'database' && 'Database Viewer'}
                                 {activeView === 'settings' && 'Settings'}
+                                {activeView === 'forecast' && 'Predictive Forecast'}
                             </h1>
                         )}
                     </div>
@@ -166,14 +170,20 @@ function App() {
                             />
                         )}
 
-                        {/* Docs View */}
-                        {activeView === 'docs' && <DocsPage />}
+                        {/* Orders View */}
+                        {activeView === 'orders' && <OrdersPage />}
+
+                        {/* Forecast View */}
+                        {activeView === 'forecast' && <ForecastPage />}
 
                         {/* Database View */}
                         {activeView === 'database' && <DatabasePage />}
 
                         {/* New Order Form View */}
                         {activeView === 'new_order' && <NewOrderPage />}
+
+                        {/* Orders View */}
+                        {activeView === 'orders' && <OrdersPage />}
 
                         {/* Settings View */}
                         {activeView === 'settings' && (

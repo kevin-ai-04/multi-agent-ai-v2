@@ -169,6 +169,12 @@ export async function analyzeAllEmails(): Promise<{ status: string, processed_co
     return response.json();
 }
 
+export const generateForecast = async (): Promise<any> => {
+    const res = await fetch(`${API_BASE_URL}/forecast/generate`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to generate forecast');
+    return res.json();
+};
+
 export async function getEmailAnalysis(emailId: string): Promise<{ status: string, data?: any }> {
     const response = await fetch(`${API_BASE_URL}/emails/${emailId}/analysis`);
     if (!response.ok) {
@@ -176,4 +182,15 @@ export async function getEmailAnalysis(emailId: string): Promise<{ status: strin
         throw new Error(`Failed to fetch email analysis: ${response.statusText}`);
     }
     return response.json();
+}
+
+// --- Orders API ---
+
+export async function fetchOrders(): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/orders`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch orders: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data.orders || [];
 }

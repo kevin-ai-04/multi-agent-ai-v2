@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
-import { Bot, ChevronLeft, ChevronRight, Home, Settings as SettingsIcon, Mail, LayoutDashboard, Book, Database, PlusCircle } from "lucide-react"
+import { Bot, ChevronLeft, ChevronRight, Home, Settings as SettingsIcon, Mail, LayoutDashboard, Book, Database, PlusCircle, ShoppingCart, TrendingUp } from "lucide-react"
 
 import { NavItem } from "./NavItem"
 
@@ -14,8 +14,8 @@ interface SidebarProps {
     setAgentAEnabled: (enabled: boolean) => void;
     agentBEnabled: boolean;
     setAgentBEnabled: (enabled: boolean) => void;
-    activeView: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order";
-    setActiveView: (view: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order") => void;
+    activeView: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast";
+    setActiveView: (view: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast") => void;
     isCollapsed: boolean;
     setIsCollapsed: (collapsed: boolean) => void;
     onNewOrder: () => void;
@@ -105,6 +105,22 @@ export function Sidebar({
                         view="docs"
                         icon={Book}
                         label="Docs"
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                        isCollapsed={isCollapsed}
+                    />
+                    <NavItem
+                        view="orders"
+                        icon={ShoppingCart}
+                        label="Orders"
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                        isCollapsed={isCollapsed}
+                    />
+                    <NavItem
+                        view="forecast"
+                        icon={TrendingUp}
+                        label="Forecast"
                         activeView={activeView}
                         setActiveView={setActiveView}
                         isCollapsed={isCollapsed}

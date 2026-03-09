@@ -230,24 +230,9 @@ conn.execute("INSERT OR IGNORE INTO policies(key,value) VALUES ('min_vendor_scor
 conn.execute("INSERT OR IGNORE INTO policies(key,value) VALUES ('max_open_orders','500')")
 
 # ---------------- Inventory (Expanded Capacity) ----------------
-# Existing items expanded
-conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (1,500,10000,1000)")
-conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (2,400,8000,800)")
-# ... (Assuming existing inserts are handled by IGNORE, but we want to UPDATE capacity if exists? IGNORE skips. So I should probably DELETE and re-insert or assume clean slate. The script does CREATE TABLE IF NOT EXISTS. If DB exists, these INSERT OR IGNOREs do nothing for existing IDs.
-# To ensure expansion, I will assume the user might delete the DB or I should use REPLACE or update the values.)
-# Since this is an init script, I will just add *new* items.
-# But user said "expand compliance limits in order to support more storage". If DB exists, I might need to run an UPDATE.
-# I'll add an UPDATE at the end for existing items to boost capacity.
-
-# Removed New Vendors block (moved to top with phone data)
-
-
-
-
-# New Inventory (51-80)
-conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (51,50,500,100)")
-conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (52,60,600,120)")
-conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (53,40,400,80)")
+# Provide baseline inventory for ALL items (1-80)
+for i in range(1, 81):
+    conn.execute(f"INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES ({i}, 200, 5000, 50)")
 conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (54,20,200,40)")
 conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (55,20,200,40)")
 conn.execute("INSERT OR IGNORE INTO inventory(item_id, qty_on_hand, max_capacity, min_qty) VALUES (56,10,100,20)")
@@ -281,22 +266,6 @@ conn.execute("UPDATE inventory SET max_capacity = max_capacity * 2 WHERE item_id
 conn.execute("UPDATE budgets SET limit_amount = limit_amount * 2")
 conn.execute("UPDATE policies SET value = '100000' WHERE key = 'max_single_order_amount'")
 
-
-#orders
-
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (1,1,5,1,37500,'DRAFT','orders/order_1.pdf')")
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (2,2,3,2,28500,'APPROVED','orders/order_2.pdf')")
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (3,3,2,4,24000,'PENDING','orders/order_3.pdf')")
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (4,4,4,4,36000,'DRAFT','orders/order_4.pdf')")
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (5,5,10,5,9000,'APPROVED','orders/order_5.pdf')")
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (6,6,6,5,8400,'PENDING','orders/order_6.pdf')")
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (7,7,3,6,9000,'DRAFT','orders/order_7.pdf')")
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (8,8,2,6,9000,'APPROVED','orders/order_8.pdf')")
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (9,9,20,7,12000,'PENDING','orders/order_9.pdf')")
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (10,10,15,7,750,'DRAFT','orders/order_10.pdf')")
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (11,11,5,8,1250,'APPROVED','orders/order_11.pdf')")
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (12,12,3,8,2400,'PENDING','orders/order_12.pdf')")
-conn.execute("INSERT OR IGNORE INTO orders(id,item_id,qty,vendor_id,amount,status,pdf_path) VALUES (13,13,7,9,3500,'DRAFT','orders/order_13.pdf')")
 
 
 

@@ -471,13 +471,13 @@ def generate_order_pdf(order: dict, output_dir: str = "orders") -> str:
     Generates a PDF Purchase Order using fpdf2.
     Returns the path to the saved PDF file.
     """
-    from fpdf import FPDF
+    from fpdf import FPDF, Align
     import os
     from datetime import datetime
 
     os.makedirs(output_dir, exist_ok=True)
     order_id  = order.get('order_id') or order.get('id', 'unknown')
-    file_path = os.path.join(output_dir, f"order_{order_id}.pdf")
+    file_path = f"{output_dir}/order_{order_id}.pdf"
 
     # Generate PO content via LLM and sanitize Unicode characters
     po_body = sanitize_text(generate_po_content(order))
@@ -489,12 +489,14 @@ def generate_order_pdf(order: dict, output_dir: str = "orders") -> str:
     # ── Header ──────────────────────────────────
     pdf.set_font("Helvetica", "B", 20)
     pdf.set_text_color(30, 30, 30)
-    pdf.cell(0, 10, "PURCHASE ORDER", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 10, text="PURCHASE ORDER", align=Align.C)
+    pdf.ln(10)
 
     pdf.set_font("Helvetica", "", 11)
     pdf.set_text_color(100, 100, 100)
-    pdf.cell(0, 6, f"PO Number: #{order_id}", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(0, 6, f"Date: {order.get('created_at', datetime.now().strftime('%Y-%m-%d'))}", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, text=f"PO Number: #{order_id}", align=Align.C)
+    pdf.ln(6)
+    pdf.cell(0, 6, text=f"Date: {order.get('created_at', datetime.now().strftime('%Y-%m-%d'))}", align=Align.C)
     pdf.ln(4)
     pdf.set_draw_color(200, 200, 200)
     pdf.line(20, pdf.get_y(), 190, pdf.get_y())
@@ -514,19 +516,21 @@ def generate_order_pdf(order: dict, output_dir: str = "orders") -> str:
     ]
     for label, value in fields:
         pdf.set_font("Helvetica", "B", 10)
-        pdf.cell(50, 7, label + ":", new_x="RIGHT", new_y="TOP")
+        pdf.cell(50, 7, text=label + ":")
         pdf.set_font("Helvetica", "", 10)
-        pdf.cell(0, 7, str(value), new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 7, text=str(value))
+        pdf.ln(7)
     pdf.ln(4)
     pdf.line(20, pdf.get_y(), 190, pdf.get_y())
     pdf.ln(6)
 
     # ── LLM-Generated PO Body ───────────────────
     pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 8, "Purchase Order Details", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 8, text="Purchase Order Details")
+    pdf.ln(8)
     pdf.set_font("Helvetica", "", 10)
     pdf.set_text_color(50, 50, 50)
-    pdf.multi_cell(0, 6, po_body)
+    pdf.multi_cell(0, 6, text=po_body)
     pdf.ln(6)
 
     # ── Footer ──────────────────────────────────
@@ -534,8 +538,9 @@ def generate_order_pdf(order: dict, output_dir: str = "orders") -> str:
     pdf.ln(4)
     pdf.set_font("Helvetica", "I", 9)
     pdf.set_text_color(130, 130, 130)
-    pdf.cell(0, 6, "Aurora Industries -- Procurement Department", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(0, 6, "This is a system-generated Purchase Order.", align="C")
+    pdf.cell(0, 6, text="Aurora Industries -- Procurement Department", align=Align.C)
+    pdf.ln(6)
+    pdf.cell(0, 6, text="This is a system-generated Purchase Order.", align=Align.C)
 
     pdf.output(file_path)
     return file_path

@@ -6,7 +6,12 @@ streamlit
 ollama
 playwright
 pytest
+# Data Analysis & Forecasting
+pandas==2.2.0
+prophet==1.1.5
 fastapi
 uvicorn
 pydantic
 python-dotenv
+fpdf2
+httpx

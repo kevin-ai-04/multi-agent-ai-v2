@@ -164,6 +164,30 @@ async def api_delete_table_data(table_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- Orders API ---
+@app.get("/orders")
+async def api_get_orders():
+    try:
+        from backend.database import get_orders as db_get_orders
+        orders = db_get_orders()
+        return {"orders": orders}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Forecast API ---
+@app.post("/forecast/generate")
+async def api_generate_forecast():
+    """ Runs historical math analysis and LLM summarization. """
+    try:
+        from backend.forecast import generate_forecast_report
+        result = generate_forecast_report()
+        if "error" in result and result["error"] is True:
+            # We still return the markdown error message so the UI can render it gracefully
+            return result
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # --- Email Analysis API ---
 from backend.agents import analyze_email_content
 from backend.database import get_item_by_name, get_vendor, save_email_analysis, get_email_analysis, get_unanalyzed_emails, get_db_connection, find_analysis_by_item_name
