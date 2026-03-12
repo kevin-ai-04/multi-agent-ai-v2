@@ -176,14 +176,14 @@ function App() {
                         {/* Forecast View */}
                         {activeView === 'forecast' && <ForecastPage />}
 
+                        {/* Docs View */}
+                        {activeView === 'docs' && <DocsPage />}
+
                         {/* Database View */}
                         {activeView === 'database' && <DatabasePage />}
 
                         {/* New Order Form View */}
                         {activeView === 'new_order' && <NewOrderPage />}
-
-                        {/* Orders View */}
-                        {activeView === 'orders' && <OrdersPage />}
 
                         {/* Settings View */}
                         {activeView === 'settings' && (
