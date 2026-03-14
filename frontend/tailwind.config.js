@@ -19,6 +19,9 @@ export default {
             },
         },
         extend: {
+            fontFamily: {
+                sans: ['Inter', 'system-ui', 'Avenir', 'Helvetica', 'Arial', 'sans-serif'],
+            },
             colors: {
                 border: "hsl(var(--border))",
                 input: "hsl(var(--input))",

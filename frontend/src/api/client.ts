@@ -194,3 +194,45 @@ export async function fetchOrders(): Promise<any[]> {
     const data = await response.json();
     return data.orders || [];
 }
+
+export interface PaginatedOrdersResponse {
+    status: string;
+    orders: any[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+}
+
+export async function fetchOrdersPaginated(
+    page: number = 1,
+    perPage: number = 20,
+    status?: string,
+    search?: string,
+): Promise<PaginatedOrdersResponse> {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    if (status) params.set("status", status);
+    if (search) params.set("search", search);
+
+    const response = await fetch(`${API_BASE_URL}/orders/list?${params}`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch orders: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+export interface OrdersSummary {
+    total_count: number;
+    total_volume: number;
+    draft_count: number;
+    approved_count: number;
+}
+
+export async function fetchOrdersSummary(): Promise<OrdersSummary> {
+    const response = await fetch(`${API_BASE_URL}/orders/summary`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch orders summary: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data as OrdersSummary;
+}

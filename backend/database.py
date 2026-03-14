@@ -417,6 +417,75 @@ def get_orders():
     return [dict(row) for row in rows]
 
 
+def get_orders_paginated(page: int = 1, per_page: int = 20, status: str = None, search: str = None):
+    """Returns paginated orders with total count for efficient rendering."""
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    where_clauses = []
+    params = []
+
+    if status:
+        where_clauses.append("o.status = ?")
+        params.append(status)
+    if search:
+        where_clauses.append("(i.name LIKE ? OR v.name LIKE ? OR CAST(o.id AS TEXT) LIKE ?)")
+        params.extend([f"%{search}%", f"%{search}%", f"%{search}%"])
+
+    where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    # Get total count
+    c.execute(f"""
+        SELECT COUNT(*) as total
+        FROM orders o
+        LEFT JOIN items i ON o.item_id = i.id
+        LEFT JOIN vendors v ON o.vendor_id = v.id
+        {where_sql}
+    """, params)
+    total = c.fetchone()['total']
+
+    # Get paginated rows
+    offset = (page - 1) * per_page
+    c.execute(f"""
+        SELECT o.*, i.name AS item_name, i.unit_price,
+               v.name AS vendor_name, v.email AS vendor_email
+        FROM orders o
+        LEFT JOIN items i ON o.item_id = i.id
+        LEFT JOIN vendors v ON o.vendor_id = v.id
+        {where_sql}
+        ORDER BY o.id DESC
+        LIMIT ? OFFSET ?
+    """, params + [per_page, offset])
+    rows = c.fetchall()
+    conn.close()
+
+    total_pages = (total + per_page - 1) // per_page
+    return {
+        'orders': [dict(row) for row in rows],
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': total_pages
+    }
+
+
+def get_orders_summary():
+    """Returns aggregate stats for the orders header (total volume, counts by status)."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT
+            COUNT(*) as total_count,
+            COALESCE(SUM(amount), 0) as total_volume,
+            SUM(CASE WHEN status = 'DRAFT' THEN 1 ELSE 0 END) as draft_count,
+            SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as approved_count
+        FROM orders
+    """)
+    row = c.fetchone()
+    conn.close()
+    return dict(row)
+
+
 def get_order_by_id(order_id: int):
     """Returns a single order with full item and vendor details."""
     conn = get_db_connection()

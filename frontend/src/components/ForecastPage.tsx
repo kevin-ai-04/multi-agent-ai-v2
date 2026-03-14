@@ -31,7 +31,7 @@ export const ForecastPage: React.FC = () => {
     };
 
     return (
-        <div className="flex-1 p-8 space-y-8 overflow-y-auto w-full h-full custom-scrollbar pl-[280px]">
+        <div className="flex-1 p-8 space-y-8 overflow-y-auto w-full h-full custom-scrollbar">
             {/* Header */}
             <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3">
