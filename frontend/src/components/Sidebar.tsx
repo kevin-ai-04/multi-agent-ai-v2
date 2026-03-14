@@ -72,7 +72,7 @@ export function Sidebar({
                 {!isCollapsed && (
                     <div className="ml-3 flex flex-col">
                         <span className="font-bold text-lg leading-none tracking-tight">Procurement<span className="text-primary">Console</span></span>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold mt-1">v26.02.19-001</span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold mt-1">v26.03.15-001</span>
                     </div>
                 )}
             </div>
