@@ -27,7 +27,7 @@ def analyze_seasonality():
         if df.empty:
              return {"error": "No orders found in database to analyze."}
 
-        df['created_at'] = pd.to_datetime(df['created_at'])
+        df['created_at'] = pd.to_datetime(df['created_at'], format='mixed')
         
         # Aggregate quantity by item and month
         df['month'] = df['created_at'].dt.strftime('%B')
@@ -132,10 +132,10 @@ def generate_forecast_report():
         }
 
 def _generate_error_md(title, message):
-    """Helper to generate a styled error block."""
-    return f"""
-# ❌ {title}
+    """Helper to generate a styled error block as a proper response dict."""
+    md = f"""# ❌ {title}
 
 **Error Details:**
 {message}
 """
+    return {"error": True, "markdown": md.strip()}
