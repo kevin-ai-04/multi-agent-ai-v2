@@ -306,7 +306,7 @@ def get_all_email_analyses():
 def find_analysis_by_item_name(item_name: str):
     """
     Fuzzy-searches email_analysis by item_name.
-    Returns the most recent row so the caller can check compliance_status.
+    Returns the most recent row.
     """
     conn = get_db_connection()
     c = conn.cursor()
@@ -386,12 +386,12 @@ def get_department_for_item(item_name: str) -> str:
     return 'Operations'  # Fallback department
 
 def create_order(item_id: int, vendor_id: int, qty: int, amount: float) -> int:
-    """Inserts a DRAFT order. Returns the new order id."""
+    """Inserts an order. Returns the new order id."""
     conn = get_db_connection()
     c = conn.cursor()
     try:
         c.execute(
-            "INSERT INTO orders (item_id, qty, vendor_id, amount, status) VALUES (?, ?, ?, ?, 'DRAFT')",
+            "INSERT INTO orders (item_id, qty, vendor_id, amount) VALUES (?, ?, ?, ?)",
             (item_id, qty, vendor_id, amount)
         )
         conn.commit()
@@ -417,7 +417,7 @@ def get_orders():
     return [dict(row) for row in rows]
 
 
-def get_orders_paginated(page: int = 1, per_page: int = 20, status: str = None, search: str = None):
+def get_orders_paginated(page: int = 1, per_page: int = 20, search: str = None):
     """Returns paginated orders with total count for efficient rendering."""
     conn = get_db_connection()
     c = conn.cursor()
@@ -425,9 +425,6 @@ def get_orders_paginated(page: int = 1, per_page: int = 20, status: str = None, 
     where_clauses = []
     params = []
 
-    if status:
-        where_clauses.append("o.status = ?")
-        params.append(status)
     if search:
         where_clauses.append("(i.name LIKE ? OR v.name LIKE ? OR CAST(o.id AS TEXT) LIKE ?)")
         params.extend([f"%{search}%", f"%{search}%", f"%{search}%"])
@@ -470,15 +467,13 @@ def get_orders_paginated(page: int = 1, per_page: int = 20, status: str = None, 
 
 
 def get_orders_summary():
-    """Returns aggregate stats for the orders header (total volume, counts by status)."""
+    """Returns aggregate stats for the orders header (total volume, total count)."""
     conn = get_db_connection()
     c = conn.cursor()
     c.execute("""
         SELECT
             COUNT(*) as total_count,
-            COALESCE(SUM(amount), 0) as total_volume,
-            SUM(CASE WHEN status = 'DRAFT' THEN 1 ELSE 0 END) as draft_count,
-            SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as approved_count
+            COALESCE(SUM(amount), 0) as total_volume
         FROM orders
     """)
     row = c.fetchone()
@@ -503,45 +498,3 @@ def get_order_by_id(order_id: int):
     return dict(row) if row else None
 
 
-def approve_order(order_id: int) -> bool:
-    """Approves an order and deducts cost from the most recent budget."""
-    conn = get_db_connection()
-    c = conn.cursor()
-    try:
-        c.execute("SELECT amount, item_id FROM orders WHERE id = ?", (order_id,))
-        row = c.fetchone()
-        if not row:
-            raise ValueError(f"Order {order_id} not found.")
-        amount = row['amount']
-        item_id = row['item_id']
-        c.execute("UPDATE orders SET status = 'APPROVED' WHERE id = ?", (order_id,))
-        
-        # Determine semantic budget department
-        c.execute("SELECT name FROM items WHERE id = ?", (item_id,))
-        item_row = c.fetchone()
-        item_name = item_row['name'] if item_row else ""
-        dept = get_department_for_item(item_name)
-        
-        c.execute("SELECT period FROM budgets WHERE dept = ? ORDER BY period DESC LIMIT 1", (dept,))
-        budget = c.fetchone()
-        if budget:
-            c.execute(
-                "UPDATE budgets SET used_amount = used_amount + ? WHERE dept = ? AND period = ?",
-                (amount, dept, budget['period'])
-            )
-        conn.commit()
-        return True
-    finally:
-        conn.close()
-
-
-def reject_order(order_id: int) -> bool:
-    """Rejects an order."""
-    conn = get_db_connection()
-    c = conn.cursor()
-    try:
-        c.execute("UPDATE orders SET status = 'REJECTED' WHERE id = ?", (order_id,))
-        conn.commit()
-        return True
-    finally:
-        conn.close()

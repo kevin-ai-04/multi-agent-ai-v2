@@ -1,19 +1,24 @@
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import { Bot, ChevronLeft, ChevronRight, Home, Settings as SettingsIcon, Mail, LayoutDashboard, Book, Database, PlusCircle, ShoppingCart, TrendingUp } from "lucide-react"
-
 import { NavItem } from "./NavItem"
 
 interface SidebarProps {
-    agentAEnabled: boolean;
-    setAgentAEnabled: (enabled: boolean) => void;
-    agentBEnabled: boolean;
-    setAgentBEnabled: (enabled: boolean) => void;
+    agentNum2TextEnabled: boolean;
+    setAgentNum2TextEnabled: (enabled: boolean) => void;
+    agentText2NumEnabled: boolean;
+    setAgentText2NumEnabled: (enabled: boolean) => void;
+    agentEmailEnabled: boolean;
+    setAgentEmailEnabled: (enabled: boolean) => void;
+    agentComplianceEnabled: boolean;
+    setAgentComplianceEnabled: (enabled: boolean) => void;
+    agentPdfEnabled: boolean;
+    setAgentPdfEnabled: (enabled: boolean) => void;
+    agentForecastEnabled: boolean;
+    setAgentForecastEnabled: (enabled: boolean) => void;
     activeView: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast";
     setActiveView: (view: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast") => void;
     isCollapsed: boolean;
@@ -22,10 +27,18 @@ interface SidebarProps {
 }
 
 export function Sidebar({
-    agentAEnabled,
-    setAgentAEnabled,
-    agentBEnabled,
-    setAgentBEnabled,
+    agentNum2TextEnabled,
+    setAgentNum2TextEnabled,
+    agentText2NumEnabled,
+    setAgentText2NumEnabled,
+    agentEmailEnabled,
+    setAgentEmailEnabled,
+    agentComplianceEnabled,
+    setAgentComplianceEnabled,
+    agentPdfEnabled,
+    setAgentPdfEnabled,
+    agentForecastEnabled,
+    setAgentForecastEnabled,
     activeView,
     setActiveView,
     isCollapsed,
@@ -168,17 +181,51 @@ export function Sidebar({
                     </PopoverTrigger>
                     <PopoverContent side="right" className="w-80 ml-4 glass border-white/20 p-0 overflow-hidden">
                         <div className="p-4 bg-blue-500/10 border-b border-white/10">
-                            <h4 className="font-semibold leading-none">Agent Status</h4>
+                            <h4 className="font-semibold leading-none text-blue-900 dark:text-blue-100">Agent Status</h4>
                             <p className="text-xs text-muted-foreground mt-1">Active Neural Modules</p>
                         </div>
                         <div className="p-4 grid gap-4">
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="agent-a" className="font-medium">Num2Text</Label>
-                                <Switch id="agent-a" checked={agentAEnabled} onCheckedChange={setAgentAEnabled} />
+                                <label className="text-sm">Num2Text</label>
+                                <Switch
+                                    checked={agentNum2TextEnabled}
+                                    onCheckedChange={setAgentNum2TextEnabled}
+                                />
                             </div>
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="agent-b" className="font-medium">Text2Num</Label>
-                                <Switch id="agent-b" checked={agentBEnabled} onCheckedChange={setAgentBEnabled} />
+                                <label className="text-sm">Text2Num</label>
+                                <Switch
+                                    checked={agentText2NumEnabled}
+                                    onCheckedChange={setAgentText2NumEnabled}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm">Email Analyzer</label>
+                                <Switch
+                                    checked={agentEmailEnabled}
+                                    onCheckedChange={setAgentEmailEnabled}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm">Compliance</label>
+                                <Switch
+                                    checked={agentComplianceEnabled}
+                                    onCheckedChange={setAgentComplianceEnabled}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm">PDF Generator</label>
+                                <Switch
+                                    checked={agentPdfEnabled}
+                                    onCheckedChange={setAgentPdfEnabled}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm">Forecast</label>
+                                <Switch
+                                    checked={agentForecastEnabled}
+                                    onCheckedChange={setAgentForecastEnabled}
+                                />
                             </div>
                         </div>
                     </PopoverContent>

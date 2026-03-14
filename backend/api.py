@@ -25,31 +25,44 @@ ORDERS_DIR.mkdir(exist_ok=True)
 app.mount("/static/orders", StaticFiles(directory=str(ORDERS_DIR)), name="orders")
 
 class ChatRequest(BaseModel):
-    input_text: str
-    agent_a_enabled: bool = True
-    agent_b_enabled: bool = True
+    message: str
+    user_id: str = "default_user"
+    agent_num2text_enabled: bool = True
+    agent_text2num_enabled: bool = True
     agent_email_enabled: bool = True
+    agent_compliance_enabled: bool = True
+    agent_pdf_enabled: bool = True
+    agent_forecast_enabled: bool = True
 
 class ChatResponse(BaseModel):
     response_text: str
     steps: list[str]
     ui_actions: list[dict] = []
 
+class OrdersSummaryResponse(BaseModel):
+    total_count: int
+    total_volume: float
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     try:
-        inputs = {
-            "input_text": request.input_text,
-            "agent_a_enabled": request.agent_a_enabled,
-            "agent_b_enabled": request.agent_b_enabled,
-            "agent_email_enabled": request.agent_email_enabled,
+        initial_state = {
+            "input_text": request.message,
             "steps": [],
-            "ui_actions": [],
+            "agent_num2text_enabled": request.agent_num2text_enabled,
+            "agent_text2num_enabled": request.agent_text2num_enabled,
+            "agent_email_enabled": request.agent_email_enabled,
+            "agent_compliance_enabled": request.agent_compliance_enabled,
+            "agent_pdf_enabled": request.agent_pdf_enabled,
+            "agent_forecast_enabled": request.agent_forecast_enabled,
             "routing_decision": "unknown",
-            "output_text": ""
+            "output_text": "",
+            "ui_actions": [],
+            "gatekeeper_results": [],
+            "order_ids": []
         }
         
-        result = workflow.invoke(inputs)
+        result = workflow.invoke(initial_state)
         
         return ChatResponse(
             response_text=result.get("output_text", "Error processing request."),
@@ -85,7 +98,6 @@ class EmailItem(BaseModel):
     body: str
     folder: str
     has_analysis: bool = False
-    priority: str | None = None
 
 class SendEmailRequest(BaseModel):
     to_email: str
@@ -317,7 +329,6 @@ async def manual_compliance_check(payload: dict):
         "status": "success",
         "passed": gate['passed'],
         "explanation": explanation,
-        "computed_priority": priority,
         "total_cost": total_cost,
         "fake_analysis_context": fake_analysis
     }
@@ -377,8 +388,8 @@ async def check_compliance(email_id: str):
         
         conn = get_db_connection()
         conn.execute(
-            "UPDATE email_analysis SET compliance_status = ?, compliance_explanation = ? WHERE email_id = ?",
-            (status_text, explanation, email_id)
+            "UPDATE email_analysis SET compliance_explanation = ? WHERE email_id = ?",
+            (explanation, email_id)
         )
         conn.commit()
         conn.close()
@@ -397,9 +408,6 @@ async def generate_procurement_order(email_id: str):
         analysis = get_email_analysis(email_id)
         if not analysis:
             raise HTTPException(status_code=404, detail="Analysis not found")
-            
-        if analysis.get('compliance_status') != 'Passed':
-            raise HTTPException(status_code=400, detail="Cannot create order: Compliance checks have not passed.")
             
         order_id = create_order(
             item_id=analysis['item_id'],
@@ -462,8 +470,8 @@ async def compliance_by_item_name(payload: dict):
 
     conn = get_db_connection()
     conn.execute(
-        "UPDATE email_analysis SET compliance_status = ?, compliance_explanation = ? WHERE email_id = ?",
-        (status_text, explanation, analysis["email_id"])
+        "UPDATE email_analysis SET compliance_explanation = ? WHERE email_id = ?",
+        (explanation, analysis["email_id"])
     )
     conn.commit()
     conn.close()
@@ -493,12 +501,6 @@ async def order_by_item_name(payload: dict):
     analysis = find_analysis_by_item_name(item_name)
     if not analysis:
         raise HTTPException(status_code=404, detail=f"No email analysis found for '{item_name}'")
-
-    if analysis.get("compliance_status") != "Passed":
-        raise HTTPException(
-            status_code=400,
-            detail=f"Cannot create order: compliance has not passed for '{analysis.get('item_name', item_name)}'. Run compliance check first."
-        )
 
     order_id = create_order(
         item_id=analysis["item_id"],
@@ -540,26 +542,24 @@ async def lookup_item(name: str):
 
 # --- Order Management API ---
 from fastapi.responses import FileResponse
+from fastapi import Query
 from backend.database import (
     get_orders as db_get_orders,
     get_orders_paginated as db_get_orders_paginated,
     get_orders_summary as db_get_orders_summary,
     get_order_by_id as db_get_order_by_id,
-    approve_order as db_approve_order,
-    reject_order as db_reject_order
 )
 from backend.agents import generate_order_pdf
 
 @app.get("/orders/list")
 async def list_orders_paginated(
-    page: int = 1,
-    per_page: int = 20,
-    status: str | None = None,
-    search: str | None = None,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    search: str = Query(None)
 ):
     """Paginated orders list with optional filtering."""
     try:
-        result = db_get_orders_paginated(page=page, per_page=per_page, status=status, search=search)
+        result = db_get_orders_paginated(page=page, per_page=per_page, search=search)
         return {"status": "success", **result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -592,25 +592,6 @@ async def get_order(order_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/orders/{order_id}/approve")
-async def approve_order_endpoint(order_id: int):
-    """Approve a DRAFT order and deduct from budget."""
-    try:
-        db_approve_order(order_id)
-        return {"status": "success", "message": f"Order #{order_id} approved."}
-    except ValueError as ve:
-        raise HTTPException(status_code=404, detail=str(ve))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/orders/{order_id}/reject")
-async def reject_order_endpoint(order_id: int):
-    """Reject an order."""
-    try:
-        db_reject_order(order_id)
-        return {"status": "success", "message": f"Order #{order_id} rejected."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/orders/{order_id}/generate-pdf")
 async def generate_pdf_endpoint(order_id: int):
@@ -632,7 +613,6 @@ async def generate_pdf_endpoint(order_id: int):
             "total_cost":  order.get("amount", 0),
             "vendor_name": order.get("vendor_name", "N/A"),
             "vendor_email":order.get("vendor_email", "N/A"),
-            "priority":    order.get("status", "DRAFT"),
             "created_at":  order.get("created_at", ""),
         }
 

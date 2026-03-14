@@ -17,12 +17,15 @@ class AgentState(TypedDict):
     routing_decision: str
     output_text: str
     steps: list[str]
-    agent_a_enabled: bool
-    agent_b_enabled: bool
+    agent_num2text_enabled: bool
+    agent_text2num_enabled: bool
     agent_email_enabled: bool
+    agent_compliance_enabled: bool
+    agent_pdf_enabled: bool
+    agent_forecast_enabled: bool
     ui_actions: list[dict]
-    gatekeeper_results: list[dict]  # per-email compliance results
-    order_ids: list[int]            # IDs of created DRAFT orders
+    gatekeeper_results: list[dict]
+    order_ids: list[int]
 
 # 2. Define Nodes
 def orchestrator_node(state: AgentState):
@@ -175,7 +178,7 @@ def compliance_node(state: AgentState):
                     )
                     order_ids.append(order_id)
                     order_count += 1
-                    steps.append(f"📋 Order #{order_id} created (DRAFT) — ${amount:,.2f}")
+                    steps.append(f"📋 Order #{order_id} created — ${amount:,.2f}")
             else:
                 failed_count += 1
                 steps.append(f"❌ FAILED  [{item_name}]: {explanation}")
@@ -239,7 +242,6 @@ def pdf_node(state: AgentState):
             "total_cost":  order.get("amount", 0),
             "vendor_name": order.get("vendor_name", "N/A"),
             "vendor_email":order.get("vendor_email", "N/A"),
-            "priority":    order.get("status", "DRAFT"),
             "created_at":  order.get("created_at", ""),
         }
 
@@ -313,11 +315,11 @@ def service_unavailable_node(state: AgentState):
 def route_decision(state: AgentState) -> Literal["agent_num2text", "agent_text2num", "agent_email", "agent_compliance", "agent_pdf", "unknown", "service_unavailable"]:
     decision = state["routing_decision"]
     agent_enabled_map = {
-        "num2text":   state.get("agent_a_enabled", True),
-        "text2num":   state.get("agent_b_enabled", True),
+        "num2text":   state.get("agent_num2text_enabled", True),
+        "text2num":   state.get("agent_text2num_enabled", True),
         "email":      state.get("agent_email_enabled", True),
-        "compliance": state.get("agent_email_enabled", True),
-        "pdf":        state.get("agent_email_enabled", True),
+        "compliance": state.get("agent_compliance_enabled", True),
+        "pdf":        state.get("agent_pdf_enabled", True),
     }
 
     if decision in ["num2text", "text2num", "email", "compliance", "pdf"]:

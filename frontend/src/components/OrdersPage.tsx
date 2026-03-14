@@ -23,8 +23,6 @@ export function OrdersPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalOrders, setTotalOrders] = useState(0);
 
-    // Filter state
-    const [statusFilter, setStatusFilter] = useState<string>("");
     const [searchInput, setSearchInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -43,7 +41,6 @@ export function OrdersPage() {
             const data = await fetchOrdersPaginated(
                 page,
                 PER_PAGE,
-                statusFilter || undefined,
                 searchQuery || undefined,
             );
             setOrders(data.orders);
@@ -54,7 +51,7 @@ export function OrdersPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [page, statusFilter, searchQuery]);
+    }, [page, searchQuery]);
 
     useEffect(() => {
         loadOrders();
@@ -63,7 +60,7 @@ export function OrdersPage() {
     // Reset to page 1 when filters change
     useEffect(() => {
         setPage(1);
-    }, [statusFilter, searchQuery]);
+    }, [searchQuery]);
 
     const handleSearch = () => {
         setSearchQuery(searchInput.trim());
@@ -74,24 +71,6 @@ export function OrdersPage() {
         setSearchQuery("");
     };
 
-    const StatusBadge = ({ status }: { status: string }) => {
-        const variants: Record<string, string> = {
-            'DRAFT': 'bg-gray-500/10 text-gray-500 border-gray-500/20',
-            'PENDING': 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20 dark:text-yellow-400',
-            'COMPLETED': 'bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400',
-            'APPROVED': 'bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400',
-            'CANCELLED': 'bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400',
-            'REJECTED': 'bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400',
-        };
-
-        return (
-            <Badge variant="outline" className={`font-mono ${variants[status] || variants['DRAFT']}`}>
-                {status}
-            </Badge>
-        );
-    };
-
-    const statusOptions = ["", "DRAFT", "APPROVED", "PENDING", "COMPLETED", "REJECTED", "CANCELLED"];
 
     return (
         <div className="flex h-full w-full overflow-hidden flex-col bg-white/30 dark:bg-black/20 backdrop-blur-md">
@@ -147,16 +126,6 @@ export function OrdersPage() {
                     )}
                 </div>
 
-                {/* Status Filter */}
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 text-sm rounded-lg border border-white/20 bg-white/50 dark:bg-black/30 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all cursor-pointer"
-                >
-                    {statusOptions.map((s) => (
-                        <option key={s} value={s}>{s || "All Statuses"}</option>
-                    ))}
-                </select>
 
                 {/* Page Info */}
                 <div className="ml-auto text-sm text-muted-foreground font-mono">
@@ -195,22 +164,16 @@ export function OrdersPage() {
                                     key={order.id}
                                     className="group relative overflow-hidden glass border-white/20 hover:border-blue-500/30 transition-all duration-500 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-1 hover:bg-white/60 dark:hover:bg-black/60 p-0"
                                 >
-                                    {/* Accent strip based on status */}
-                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${order.status === 'COMPLETED' || order.status === 'APPROVED' ? 'bg-green-500/80 shadow-[0_0_10px_rgba(34,197,94,0.5)]' :
-                                        order.status === 'PENDING' ? 'bg-yellow-500/80 shadow-[0_0_10px_rgba(234,179,8,0.5)]' :
-                                            order.status === 'DRAFT' ? 'bg-gray-400/80' :
-                                                'bg-red-500/80'
-                                        }`} />
+                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500/80 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
 
                                     <div className="p-6 ml-2 flex flex-col md:flex-row gap-6 md:items-center">
 
-                                        {/* ID & Status */}
+                                        {/* ID */}
                                         <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center w-full md:w-32 shrink-0 border-b md:border-b-0 md:border-r border-black/5 dark:border-white/10 pb-4 md:pb-0 md:pr-6 gap-2">
                                             <div className="flex flex-col">
                                                 <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider mb-1">REQ-ID</span>
                                                 <span className="text-2xl font-black tracking-tighter text-foreground/80">#{order.id.toString().padStart(4, '0')}</span>
                                             </div>
-                                            <StatusBadge status={order.status} />
                                         </div>
 
                                         {/* Core Details */}
@@ -270,7 +233,7 @@ export function OrdersPage() {
                                                     className="w-full md:w-12 md:hover:w-32 group/btn relative overflow-hidden transition-all duration-300 bg-black hover:bg-gray-800 text-white dark:bg-white dark:text-black dark:hover:bg-gray-200 shadow-md"
                                                     asChild
                                                 >
-                                                    <a href={`http://localhost:8000/media/${order.pdf_path.split('/').pop()}`} target="_blank" rel="noopener noreferrer">
+                                                    <a href={`http://localhost:8000/static/orders/${order.pdf_path.split('/').pop()}`} target="_blank" rel="noopener noreferrer">
                                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none md:w-12 group-hover/btn:opacity-0 transition-opacity">
                                                             <Download className="h-4 w-4" />
                                                         </div>

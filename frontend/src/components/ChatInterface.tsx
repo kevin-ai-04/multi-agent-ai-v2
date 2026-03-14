@@ -15,8 +15,12 @@ export interface Message {
 }
 
 interface ChatInterfaceProps {
-    agentAEnabled: boolean;
-    agentBEnabled: boolean;
+    agentNum2TextEnabled: boolean;
+    agentText2NumEnabled: boolean;
+    agentEmailEnabled: boolean;
+    agentComplianceEnabled: boolean;
+    agentPdfEnabled: boolean;
+    agentForecastEnabled: boolean;
     messages: Message[];
     setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
     input: string;
@@ -27,8 +31,12 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({
-    agentAEnabled,
-    agentBEnabled,
+    agentNum2TextEnabled,
+    agentText2NumEnabled,
+    agentEmailEnabled,
+    agentComplianceEnabled,
+    agentPdfEnabled,
+    agentForecastEnabled,
     messages,
     setMessages,
     input,
@@ -61,9 +69,13 @@ export function ChatInterface({
 
         try {
             const response = await sendMessage({
-                input_text: userMessage,
-                agent_a_enabled: agentAEnabled,
-                agent_b_enabled: agentBEnabled
+                message: userMessage,
+                agent_num2text_enabled: agentNum2TextEnabled,
+                agent_text2num_enabled: agentText2NumEnabled,
+                agent_email_enabled: agentEmailEnabled,
+                agent_compliance_enabled: agentComplianceEnabled,
+                agent_pdf_enabled: agentPdfEnabled,
+                agent_forecast_enabled: agentForecastEnabled,
             });
 
             // Update with final response
