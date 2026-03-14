@@ -542,19 +542,44 @@ async def lookup_item(name: str):
 from fastapi.responses import FileResponse
 from backend.database import (
     get_orders as db_get_orders,
+    get_orders_paginated as db_get_orders_paginated,
+    get_orders_summary as db_get_orders_summary,
     get_order_by_id as db_get_order_by_id,
     approve_order as db_approve_order,
     reject_order as db_reject_order
 )
 from backend.agents import generate_order_pdf
 
+@app.get("/orders/list")
+async def list_orders_paginated(
+    page: int = 1,
+    per_page: int = 20,
+    status: str | None = None,
+    search: str | None = None,
+):
+    """Paginated orders list with optional filtering."""
+    try:
+        result = db_get_orders_paginated(page=page, per_page=per_page, status=status, search=search)
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/orders/summary")
+async def orders_summary():
+    """Aggregate stats for the orders header."""
+    try:
+        return {"status": "success", **db_get_orders_summary()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/orders")
 async def list_orders():
-    """List all orders with item and vendor details."""
+    """List all orders with item and vendor details (legacy, unpaginated)."""
     try:
         return {"status": "success", "orders": db_get_orders()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/orders/{order_id}")
 async def get_order(order_id: int):
