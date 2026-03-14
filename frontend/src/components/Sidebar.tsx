@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
-import { Bot, ChevronLeft, ChevronRight, Home, Settings as SettingsIcon, Mail, LayoutDashboard, Book, Database } from "lucide-react"
+import { Bot, ChevronLeft, ChevronRight, Home, Settings as SettingsIcon, Mail, LayoutDashboard, Book, Database, PlusCircle, ShoppingCart, TrendingUp } from "lucide-react"
 
 import { NavItem } from "./NavItem"
 
@@ -14,10 +14,11 @@ interface SidebarProps {
     setAgentAEnabled: (enabled: boolean) => void;
     agentBEnabled: boolean;
     setAgentBEnabled: (enabled: boolean) => void;
-    activeView: "home" | "emails" | "settings" | "dashboard" | "docs" | "database";
-    setActiveView: (view: "home" | "emails" | "settings" | "dashboard" | "docs" | "database") => void;
+    activeView: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast";
+    setActiveView: (view: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast") => void;
     isCollapsed: boolean;
     setIsCollapsed: (collapsed: boolean) => void;
+    onNewOrder: () => void;
 }
 
 export function Sidebar({
@@ -28,7 +29,8 @@ export function Sidebar({
     activeView,
     setActiveView,
     isCollapsed,
-    setIsCollapsed
+    setIsCollapsed,
+    onNewOrder
 }: SidebarProps) {
 
     const toggleCollapse = () => setIsCollapsed(!isCollapsed);
@@ -65,6 +67,16 @@ export function Sidebar({
             {/* Navigation */}
             <ScrollArea className="flex-1 py-4 px-3">
                 <nav className="space-y-2">
+                    <Button
+                        onClick={onNewOrder}
+                        className={cn(
+                            "w-full bg-blue-600 hover:bg-blue-500 text-white gap-2 mb-4",
+                            isCollapsed ? "px-0 justify-center" : "justify-start px-3"
+                        )}
+                    >
+                        <PlusCircle className="h-5 w-5" />
+                        {!isCollapsed && <span>New Order</span>}
+                    </Button>
                     <NavItem
                         view="home"
                         icon={Home}
@@ -93,6 +105,22 @@ export function Sidebar({
                         view="docs"
                         icon={Book}
                         label="Docs"
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                        isCollapsed={isCollapsed}
+                    />
+                    <NavItem
+                        view="orders"
+                        icon={ShoppingCart}
+                        label="Orders"
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                        isCollapsed={isCollapsed}
+                    />
+                    <NavItem
+                        view="forecast"
+                        icon={TrendingUp}
+                        label="Forecast"
                         activeView={activeView}
                         setActiveView={setActiveView}
                         isCollapsed={isCollapsed}

@@ -24,17 +24,46 @@ import {
     Star,
     Mail,
     ArrowLeft,
-    RefreshCw
+    RefreshCw,
+    Wand2,
+    Loader2,
+    ArrowUpDown,
+    Filter,
 } from "lucide-react";
-import { fetchEmails, sendEmail, syncEmails, EmailItem } from "@/api/client";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
+import { fetchEmails, sendEmail, syncEmails, EmailItem, analyzeEmail, analyzeAllEmails, getEmailAnalysis } from "@/api/client";
+import { Message } from "@/components/ChatInterface";
 
 interface EmailPageProps {
     folder: string;
+    setMessages?: React.Dispatch<React.SetStateAction<Message[]>>;
+    searchQuery: string;
+    setSearchQuery: (val: string) => void;
+    priorityFilter: string;
+    setPriorityFilter: (val: string) => void;
+    sortOrder: "newest" | "oldest";
+    setSortOrder: (val: "newest" | "oldest") => void;
 }
 
-export function EmailPage({ folder }: EmailPageProps) {
+export function EmailPage({
+    folder,
+    setMessages,
+    searchQuery,
+    setSearchQuery,
+    priorityFilter,
+    setPriorityFilter,
+    sortOrder,
+    setSortOrder
+}: EmailPageProps) {
     const [emails, setEmails] = useState<EmailItem[]>([]);
-    const [searchQuery, setSearchQuery] = useState("");
     const [selectedEmail, setSelectedEmail] = useState<EmailItem | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -45,6 +74,37 @@ export function EmailPage({ folder }: EmailPageProps) {
     const [composeSubject, setComposeSubject] = useState("");
     const [composeBody, setComposeBody] = useState("");
     const [isSending, setIsSending] = useState(false);
+
+    // Analysis State
+    const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
+    const [analyzingEmailId, setAnalyzingEmailId] = useState<string | null>(null);
+    const [analysisData, setAnalysisData] = useState<any | null>(null);
+    const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+
+    // Procurement State (Migrated to Chat Widget)
+    // The procurement flow is now handled directly within the ChatInterface 
+    // using the ChatProcurementWidget.
+
+    const handleStartProcurement = () => {
+        if (!selectedEmail || !setMessages) return;
+
+        // Simulate a message from the Orchestrator with the procurement widget
+        const newMsg: Message = {
+            role: "assistant",
+            content: `I can help you process the purchase order for email ${selectedEmail.id}. Please review the details below to proceed.`,
+            ui_actions: [
+                {
+                    action_type: "open_inline_procurement",
+                    params: {
+                        mode: "email",
+                        email_id: selectedEmail.id
+                    }
+                }
+            ]
+        };
+
+        setMessages(prev => [...prev, newMsg]);
+    };
 
     // Fetch Emails
     const loadEmails = async () => {
@@ -76,6 +136,75 @@ export function EmailPage({ folder }: EmailPageProps) {
         loadEmails();
     }, [folder]);
 
+    // Handle Analysis
+    useEffect(() => {
+        if (selectedEmail) {
+            const fetchAnalysis = async () => {
+                setIsLoadingAnalysis(true);
+                setAnalysisData(null);
+                try {
+                    const res = await getEmailAnalysis(selectedEmail.id);
+                    if (res.status === "success") {
+                        setAnalysisData(res.data);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch analysis", e);
+                } finally {
+                    setIsLoadingAnalysis(false);
+                }
+            };
+            fetchAnalysis();
+        } else {
+            setAnalysisData(null);
+        }
+    }, [selectedEmail]);
+
+    const handleAnalyzeEmail = async (emailId: string, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent opening email detail
+        setAnalyzingEmailId(emailId);
+        try {
+            const res = await analyzeEmail(emailId);
+            await loadEmails(); // Reload emails to update has_analysis flag
+
+            if (setMessages && res.step) {
+                const newMsg: Message = {
+                    role: "assistant",
+                    content: `Manually triggered background analysis for email ${emailId}.`,
+                    steps: ["Email Agent: Analyzing inbox...", res.step, "Email Agent: Processed 1 emails."]
+                };
+                setMessages(prev => [...prev, newMsg]);
+            }
+        } catch (error) {
+            alert("Failed to analyze email");
+        } finally {
+            setAnalyzingEmailId(null);
+        }
+    };
+
+    const handleAnalyzeAll = async () => {
+        setIsAnalyzingAll(true);
+        try {
+            const res = await analyzeAllEmails();
+            await loadEmails(); // refresh list
+
+            if (setMessages && res.results) {
+                const stepLogs = res.results.map((r: any) => r.step).filter(Boolean);
+                if (stepLogs.length > 0) {
+                    const newMsg: Message = {
+                        role: "assistant",
+                        content: `Manually triggered background analysis for ${res.processed_count} emails.`,
+                        steps: ["Email Agent: Analyzing inbox...", ...stepLogs, `Email Agent: Processed ${res.processed_count} emails.`]
+                    };
+                    setMessages(prev => [...prev, newMsg]);
+                }
+            }
+        } catch (error) {
+            alert("Failed to analyze all emails");
+        } finally {
+            setIsAnalyzingAll(false);
+        }
+    };
+
     // Handle Send Email
     const handleSendEmail = async () => {
         if (!composeTo || !composeBody) {
@@ -103,10 +232,31 @@ export function EmailPage({ folder }: EmailPageProps) {
         }
     };
 
-    const filteredEmails = emails.filter(email =>
-    (email.sender.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        email.subject.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredEmails = emails
+        .filter(email => {
+            // Search Query
+            const matchesSearch =
+                email.sender.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                email.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                email.body.toLowerCase().includes(searchQuery.toLowerCase());
+
+            // Priority Filter
+            if (priorityFilter === "all") return matchesSearch;
+
+            const emailPriority = email.priority || "none";
+            return matchesSearch && emailPriority.toLowerCase() === priorityFilter.toLowerCase();
+        })
+        .sort((a, b) => {
+            // Date Sorting
+            const dateA = new Date(a.date).getTime();
+            const dateB = new Date(b.date).getTime();
+
+            if (sortOrder === "newest") {
+                return dateB - dateA;
+            } else {
+                return dateA - dateB;
+            }
+        });
 
     // ----------------------------------------------------------------------
     // View: Email Detail
@@ -159,6 +309,71 @@ export function EmailPage({ folder }: EmailPageProps) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Analysis Card */}
+                        {isLoadingAnalysis && (
+                            <div className="mb-8 p-6 rounded-xl border border-white/10 bg-white/5 animate-pulse flex items-center gap-3">
+                                <Loader2 className="h-5 w-5 animate-spin text-purple-400" />
+                                <span className="text-sm text-foreground/80">Loading Analysis...</span>
+                            </div>
+                        )}
+                        {!isLoadingAnalysis && analysisData && (
+                            <div className="mb-8 overflow-hidden rounded-xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-blue-500/5 backdrop-blur-sm">
+                                <div className="px-6 py-3 border-b border-purple-500/10 bg-purple-500/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Wand2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                        <h3 className="text-sm font-semibold text-purple-800 dark:text-purple-200">AI Analysis Summary</h3>
+                                    </div>
+                                    <Button size="sm" onClick={handleStartProcurement} className="bg-green-600 hover:bg-green-500 text-white shadow shadow-green-500/20 gap-1 h-8 px-3">
+                                        <Wand2 className="h-3.5 w-3.5" /> Start Procurement
+                                    </Button>
+                                </div>
+                                <div className="p-6">
+                                    <p className="text-sm text-foreground/90 mb-4">{analysisData.summary}</p>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Priority</span>
+                                            <span className={`font-medium ${analysisData.priority === 'High' ? 'text-red-400' :
+                                                analysisData.priority === 'Medium' ? 'text-yellow-400' : 'text-green-400'
+                                                }`}>{analysisData.priority}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Item</span>
+                                            <span className="font-medium text-foreground">{analysisData.item_name}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Quantity</span>
+                                            <span className="font-medium text-foreground">{analysisData.item_quantity} Units</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Vendor</span>
+                                            <span className="font-medium text-foreground">{analysisData.vendor_name || 'N/A'}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Vendor Email</span>
+                                            <span className="font-medium text-foreground">{analysisData.vendor_email || 'N/A'}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Vendor Phone</span>
+                                            <span className="font-medium text-foreground">{analysisData.vendor_phone || 'N/A'}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Unit Cost</span>
+                                            <span className="font-medium text-foreground">
+                                                {analysisData.item_unit_price ? `$${analysisData.item_unit_price.toLocaleString()}` : 'N/A'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground block text-xs">Total Cost</span>
+                                            <span className="font-medium text-foreground">
+                                                {analysisData.total_cost ? `$${analysisData.total_cost.toLocaleString()}` : 'N/A'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="prose dark:prose-invert max-w-none text-foreground/90 whitespace-pre-wrap leading-relaxed font-sans">
                             {selectedEmail.body}
                         </div>
@@ -201,6 +416,61 @@ export function EmailPage({ folder }: EmailPageProps) {
                     <Button variant="ghost" size="icon" onClick={loadEmails} disabled={isLoading} className="text-muted-foreground hover:text-primary" title="Refresh View">
                         <RotateCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </Button>
+
+                    <div className="h-4 w-[1px] bg-white/20 mx-2" />
+
+                    {/* Sorting & Filtering Controls */}
+                    <div className="flex items-center gap-2 mr-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="gap-2 bg-white/5 border-white/10 hover:bg-white/10 h-9">
+                                    <ArrowUpDown className="w-3.5 h-3.5" />
+                                    <span className="text-xs font-medium">Sort</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-white/10">
+                                <DropdownMenuLabel>Sort by Date</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuRadioGroup value={sortOrder} onValueChange={(v) => setSortOrder(v as any)}>
+                                    <DropdownMenuRadioItem value="newest" className="text-sm">Newest First</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="oldest" className="text-sm">Oldest First</DropdownMenuRadioItem>
+                                </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className={`gap-2 border-white/10 hover:bg-white/10 h-9 ${priorityFilter !== 'all' ? 'bg-blue-500/10 text-blue-500' : 'bg-white/5'}`}>
+                                    <Filter className="w-3.5 h-3.5" />
+                                    <span className="text-xs font-medium">Priority</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-white/10">
+                                <DropdownMenuLabel>Filter by Priority</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuRadioGroup value={priorityFilter} onValueChange={setPriorityFilter}>
+                                    <DropdownMenuRadioItem value="all" className="text-sm">All Emails</DropdownMenuRadioItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuRadioItem value="High" className="text-sm text-red-500">High Priority</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="Medium" className="text-sm text-yellow-500">Medium Priority</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="Low" className="text-sm text-green-500">Low Priority</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="none" className="text-sm text-muted-foreground">None / Unanalyzed</DropdownMenuRadioItem>
+                                </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+
+                    {folder === 'inbox' && (
+                        <Button
+                            variant="outline"
+                            className="gap-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/20 ml-2 shadow-lg shadow-purple-500/10"
+                            onClick={handleAnalyzeAll}
+                            disabled={isAnalyzingAll}
+                        >
+                            {isAnalyzingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                            Analyze All
+                        </Button>
+                    )}
 
                     {/* Compose Dialog */}
                     <Dialog open={isComposeOpen} onOpenChange={setIsComposeOpen}>
@@ -288,6 +558,18 @@ export function EmailPage({ folder }: EmailPageProps) {
                             </div>
 
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {!email.has_analysis && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-purple-500 hover:bg-purple-500/20 hover:text-purple-600"
+                                        onClick={(e) => handleAnalyzeEmail(email.id, e)}
+                                        disabled={analyzingEmailId === email.id}
+                                        title="Analyze Email"
+                                    >
+                                        {analyzingEmailId === email.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                    </Button>
+                                )}
                                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-yellow-500/20 hover:text-yellow-500">
                                     <Star className="h-4 w-4" />
                                 </Button>

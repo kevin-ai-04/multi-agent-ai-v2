@@ -6,6 +6,9 @@ import { EmailPage } from "@/components/EmailPage"
 import { Dashboard } from "@/components/Dashboard"
 import { DocsPage } from "@/components/DocsPage"
 import { DatabasePage } from "@/components/DatabasePage"
+import { NewOrderPage } from "@/components/NewOrderPage"
+import { OrdersPage } from "@/components/OrdersPage"
+import { ForecastPage } from "@/components/ForecastPage"
 import "@/index.css"
 import {
     DropdownMenu,
@@ -23,8 +26,13 @@ function App() {
 
     // UI State
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-    const [activeView, setActiveView] = useState<"home" | "emails" | "settings" | "dashboard" | "docs" | "database">("home")
+    const [activeView, setActiveView] = useState<"home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast">("home")
     const [emailFolder, setEmailFolder] = useState("inbox")
+
+    // Email Filter State (Lifted for LLM control)
+    const [searchQuery, setSearchQuery] = useState("")
+    const [priorityFilter, setPriorityFilter] = useState("all")
+    const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest")
 
     // Chat Session State (Lifted for persistence)
     const [messages, setMessages] = useState<Message[]>([])
@@ -38,6 +46,38 @@ function App() {
         trash: "Trash"
     }
 
+    const handleUIAction = (action: { action_type: string; params: any }) => {
+        console.log("LLM-Triggered UI Action:", action);
+        if (action.action_type === "redirect") {
+            if (action.params.view) {
+                setActiveView(action.params.view as any);
+            }
+        } else if (action.action_type === "set_filter") {
+            const { search, priority, sort } = action.params;
+            if (search !== undefined) setSearchQuery(search);
+            if (priority !== undefined) setPriorityFilter(priority);
+            if (sort !== undefined) setSortOrder(sort as any);
+        } else if (action.action_type === "trigger_api") {
+            const { endpoint, method = "POST", payload, label = "Executing..." } = action.params;
+            setIsLoading(true);
+            setMessages(prev => [...prev, { role: "user", content: `(Clicked) ${label}` }]);
+
+            fetch(`http://localhost:8000${endpoint}`, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: payload ? JSON.stringify(payload) : undefined
+            })
+                .then(res => res.json())
+                .then(data => {
+                    setMessages(prev => [...prev, { role: "assistant", content: `Result: ${JSON.stringify(data.status)} - ${data.explanation || data.message || "Success"}` }]);
+                })
+                .catch(err => {
+                    setMessages(prev => [...prev, { role: "assistant", content: `Error executing API: ${err.message}` }]);
+                })
+                .finally(() => setIsLoading(false));
+        }
+    }
+
     return (
         <div className="flex h-screen w-full overflow-hidden mesh-gradient text-foreground transition-colors duration-500">
             <Sidebar
@@ -49,6 +89,9 @@ function App() {
                 setActiveView={setActiveView}
                 isCollapsed={isSidebarCollapsed}
                 setIsCollapsed={setIsSidebarCollapsed}
+                onNewOrder={() => {
+                    setActiveView("new_order");
+                }}
             />
 
             <main className="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300">
@@ -79,11 +122,13 @@ function App() {
                             </DropdownMenu>
                         ) : (
                             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                                {activeView === 'home' && 'Multi-Agent Number Converter'}
+                                {activeView === 'home' && 'Multi-Agent Procurement System'}
                                 {activeView === 'dashboard' && 'Neural Dashboard'}
                                 {activeView === 'docs' && 'Documentation'}
+                                {activeView === 'orders' && 'Purchase Orders'}
                                 {activeView === 'database' && 'Database Viewer'}
                                 {activeView === 'settings' && 'Settings'}
+                                {activeView === 'forecast' && 'Predictive Forecast'}
                             </h1>
                         )}
                     </div>
@@ -104,6 +149,7 @@ function App() {
                                 setInput={setInput}
                                 isLoading={isLoading}
                                 setIsLoading={setIsLoading}
+                                onUIAction={handleUIAction}
                             />
                         )}
 
@@ -111,13 +157,33 @@ function App() {
                         {activeView === 'dashboard' && <Dashboard messages={messages} isLoading={isLoading} />}
 
                         {/* Email View */}
-                        {activeView === 'emails' && <EmailPage folder={emailFolder} />}
+                        {activeView === 'emails' && (
+                            <EmailPage
+                                folder={emailFolder}
+                                setMessages={setMessages}
+                                searchQuery={searchQuery}
+                                setSearchQuery={setSearchQuery}
+                                priorityFilter={priorityFilter}
+                                setPriorityFilter={setPriorityFilter}
+                                sortOrder={sortOrder}
+                                setSortOrder={setSortOrder}
+                            />
+                        )}
+
+                        {/* Orders View */}
+                        {activeView === 'orders' && <OrdersPage />}
+
+                        {/* Forecast View */}
+                        {activeView === 'forecast' && <ForecastPage />}
 
                         {/* Docs View */}
                         {activeView === 'docs' && <DocsPage />}
 
                         {/* Database View */}
                         {activeView === 'database' && <DatabasePage />}
+
+                        {/* New Order Form View */}
+                        {activeView === 'new_order' && <NewOrderPage />}
 
                         {/* Settings View */}
                         {activeView === 'settings' && (
@@ -143,6 +209,7 @@ function App() {
                                     setInput={setInput}
                                     isLoading={isLoading}
                                     setIsLoading={setIsLoading}
+                                    onUIAction={handleUIAction}
                                 />
                             </div>
                         </div>

@@ -9,6 +9,7 @@ interface ChatRequest {
 interface ChatResponse {
     response_text: string;
     steps: string[];
+    ui_actions?: { action_type: string; params: any }[];
 }
 
 export interface EmailItem {
@@ -18,6 +19,8 @@ export interface EmailItem {
     date: string;
     body: string;
     folder: string;
+    has_analysis?: boolean;
+    priority?: string;
 }
 
 export interface SendEmailRequest {
@@ -108,6 +111,86 @@ export async function updateTableRow(tableName: string, originalRow: any, update
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || `Failed to update row: ${response.statusText}`);
     }
-
     return response.json();
+}
+
+export async function deleteTableData(tableName: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/database/tables/${tableName}`, {
+        method: "DELETE",
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to delete table data: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+// --- Email Analysis API ---
+
+export async function analyzeEmail(emailId: string): Promise<{ status: string, data: any, step?: string }> {
+    const response = await fetch(`${API_BASE_URL}/emails/${emailId}/analyze`, {
+        method: "POST",
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to analyze email: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+export async function runCompliance(emailId: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/procurement/${emailId}/compliance`, {
+        method: "POST",
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to check compliance: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+export async function generateOrder(emailId: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/procurement/${emailId}/order`, {
+        method: "POST",
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to generate order: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+export async function analyzeAllEmails(): Promise<{ status: string, processed_count: number, results: any[] }> {
+    const response = await fetch(`${API_BASE_URL}/emails/analyze_all`, {
+        method: "POST",
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to analyze all emails: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+export const generateForecast = async (): Promise<any> => {
+    const res = await fetch(`${API_BASE_URL}/forecast/generate`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to generate forecast');
+    return res.json();
+};
+
+export async function getEmailAnalysis(emailId: string): Promise<{ status: string, data?: any }> {
+    const response = await fetch(`${API_BASE_URL}/emails/${emailId}/analysis`);
+    if (!response.ok) {
+        if (response.status === 404) return { status: "not_found" };
+        throw new Error(`Failed to fetch email analysis: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+// --- Orders API ---
+
+export async function fetchOrders(): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/orders`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch orders: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data.orders || [];
 }

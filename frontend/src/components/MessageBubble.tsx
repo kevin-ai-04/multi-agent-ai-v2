@@ -1,17 +1,21 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bot, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChatProcurementWidget } from "@/components/ChatProcurementWidget";
 
 interface Message {
     role: 'user' | 'assistant';
     content: string;
     steps?: string[];
+    ui_actions?: any[];
 }
 
 interface MessageBubbleProps {
     msg: Message;
+    onActionClick?: (action: any) => void;
 }
 
-export function MessageBubble({ msg }: MessageBubbleProps) {
+export function MessageBubble({ msg, onActionClick }: MessageBubbleProps) {
     return (
         <div className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2 duration-500`}>
 
@@ -58,6 +62,31 @@ export function MessageBubble({ msg }: MessageBubbleProps) {
                             </div>
                         </details>
                     </div>
+                )}
+
+                {/* UI Action Buttons (Quick Replies) */}
+                {msg.role === 'assistant' && msg.ui_actions && (
+                    <>
+                        {msg.ui_actions.filter((a: any) => a.action_type === 'trigger_api').map((action: any, i: number) => (
+                            <div key={`btn-${i}`} className="mt-3 flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border-blue-500/30 font-medium"
+                                    onClick={() => onActionClick && onActionClick(action)}
+                                >
+                                    {action.label || action.params?.label || "Execute Action"}
+                                </Button>
+                            </div>
+                        ))}
+
+                        {/* Inline Procurement Widget */}
+                        {msg.ui_actions
+                            .filter((a: any) => a.action_type === 'open_inline_procurement')
+                            .map((action: any, i: number) => (
+                                <ChatProcurementWidget key={`proc-${i}`} params={action.params} />
+                            ))}
+                    </>
                 )}
             </div>
         </div>

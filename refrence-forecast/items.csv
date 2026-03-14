@@ -1,0 +1,81 @@
+id,name,sku,unit,unit_price,default_vendor_id
+1,Lithium-ion Battery Pack 75kWh Model X,BAT-75KWH-X,unit,7500.0,1
+2,Lithium-ion Battery Pack 100kWh Model Y,BAT-100KWH-Y,unit,9500.0,2
+3,EV Motor 250kW Model X,MOTOR-250KW-X,unit,12000.0,4
+4,EV Motor 150kW Model Y,MOTOR-150KW-Y,unit,9000.0,4
+5,Onboard Charger 11kW Standard,CHGR-11KW-ST,unit,900.0,5
+6,Onboard Charger 22kW Fast,CHGR-22KW-FAST,unit,1400.0,5
+7,Inverter 400V Model X,INV-400V-X,unit,3000.0,6
+8,Inverter 800V Model Y,INV-800V-Y,unit,4500.0,6
+9,DC-DC Converter 12V for Model X,DC-DC-12V-X,unit,600.0,7
+10,High Voltage Cable 10m,CABLE-HV-10M,meter,50.0,7
+11,Thermal Management Pump Standard,PUMP-COOL-STD,unit,250.0,8
+12,Radiator for EV Model X,RAD-EV-X,unit,800.0,8
+13,Windshield Glass Model S Front,GLASS-MS-F,unit,500.0,9
+14,Windshield Glass Model X Front,GLASS-MX-F,unit,600.0,9
+15,Side Mirror Assembly Model S,MIRROR-SIDE-MS,unit,120.0,10
+16,Rear Camera Model X,CAM-REAR-X,unit,200.0,10
+17,Radar Sensor Front Model X,SENSOR-RADAR-F,unit,400.0,11
+18,LiDAR Sensor Roof Model Y,SENSOR-LIDAR-R,unit,1500.0,11
+19,Ultrasonic Sensor Side Model X,SENSOR-ULTRA-S,unit,80.0,12
+20,Steering Wheel Model X Sport,STEER-EV-SP,unit,250.0,12
+21,Driver Seat Assembly Model X,SEAT-DRV-X,unit,800.0,13
+22,Passenger Seat Assembly Model X,SEAT-PASS-X,unit,750.0,13
+23,Infotainment Display 15in Model X,DISP-INFO-15X,unit,1200.0,14
+24,Headlight LED Low Beam Model X,LIGHT-LED-LB-X,unit,300.0,14
+25,Taillight LED Model X,LIGHT-TAIL-X,unit,200.0,14
+26,Alloy Wheel 18in Model X,WHEEL-18-X,unit,400.0,15
+27,Alloy Wheel 20in Model Y,WHEEL-20-Y,unit,500.0,15
+28,Tire 18in Model X,TIRE-18-X,unit,150.0,16
+29,Tire 20in Model Y,TIRE-20-Y,unit,180.0,16
+30,Brake Pad Set Model X Front,BRAKE-PAD-FX,set,200.0,17
+31,Brake Disc Model X Rear,BRAKE-DISC-RX,unit,300.0,17
+32,Suspension Strut Model X Front,SUSP-STRUT-FX,unit,350.0,18
+33,Shock Absorber Model X Rear,SHOCK-ABS-RX,unit,320.0,18
+34,Wiring Harness Model X Front,WIRE-HARN-FX,set,500.0,19
+35,Software License ECU Model X,ECU-SW-LIC-X,unit,200.0,19
+36,Battery Management System 100kWh Model Y,BMS-CTRL-Y,unit,1500.0,2
+37,Charging Port CCS Model X,PORT-CCS-X,unit,600.0,3
+38,Charging Port CHAdeMO Model Y,PORT-CHD-Y,unit,550.0,3
+39,Heater Assembly Model X,HEATER-EV-X,unit,400.0,20
+40,Air Conditioning Unit Model X,AC-EV-X,unit,900.0,20
+41,Fuse High Voltage Model X,FUSE-HV-X,unit,40.0,6
+42,Relay High Voltage Model X,RELAY-HV-X,unit,60.0,6
+43,Washer Fluid Pump Model X,PUMP-WASH-X,unit,30.0,8
+44,Wiper Blade Set Model X Front,WIPER-BLD-FX,set,50.0,9
+45,Battery Cooling Plate Model X,BAT-COOL-X,unit,700.0,5
+46,Motor Cooling Jacket Model Y,MOTOR-COOL-Y,unit,800.0,5
+47,Seat Belt Assembly Model X,BELT-SEAT-X,unit,120.0,12
+48,Airbag Module Front Model X,AIRBAG-FR-X,unit,500.0,13
+49,Central Control Unit Model X,CCU-MAIN-X,unit,2200.0,19
+50,Telematics Control Unit Model X,TCU-CON-X,unit,1800.0,19
+51,GPU Module Drive Orin,GPU-ORIN-X,unit,1500.0,21
+52,Vision Processor EyeQ5,VIS-EYEQ5,unit,800.0,22
+53,Snapdragon Ride SoC,SOC-SD-RIDE,unit,1200.0,23
+54,Carbon Ceramic Brake Disc Front,BRAKE-CC-F,unit,2000.0,24
+55,Carbon Ceramic Brake Disc Rear,BRAKE-CC-R,unit,1800.0,24
+56,Performance Coilover Set,SUSP-COIL-perf,set,3500.0,25
+57,Sport Bucket Seat Alcantara,SEAT-SP-ALC,unit,1500.0,26
+58,Racing Harness 5-Point,BELT-RACE-5,unit,300.0,27
+59,Matrix LED Headlight Assembly,LIGHT-MTX-LED,unit,1200.0,28
+60,Alternator High Output,ALT-HO-12V,unit,400.0,29
+61,Transmission 8-Speed Auto,TRANS-8SP-AT,unit,4500.0,30
+62,Hybrid Power Control Unit,PCU-HYBRID,unit,2500.0,29
+63,Fuel Injection Pump High Pressure,PUMP-FUEL-HP,unit,600.0,29
+64,Turbocharger Electric Assist,TURBO-E-AST,unit,1800.0,10
+65,Exhaust Manifold Sport,EXH-MAN-SP,unit,450.0,18
+66,Catalytic Converter Euro 7,CAT-CONV-E7,unit,900.0,18
+67,Steering Rack Electric,STEER-RACK-E,unit,750.0,12
+68,Air Suspension Compressor,SUSP-COMP-AIR,unit,500.0,11
+69,Door Module Controller,MOD-DOOR-CTRL,unit,150.0,19
+70,Window Regulator Motor,MOTOR-WIN-REG,unit,80.0,19
+71,Sunroof Motor Assembly,MOTOR-SUN-ASM,unit,120.0,8
+72,Rain Sensor Module,SENSOR-RAIN,unit,40.0,11
+73,TPMS Sensor Set,SENSOR-TPMS-4,set,100.0,7
+74,Keyless Entry Fob,KEY-FOB-ENTRY,unit,80.0,7
+75,Ambient Lighting Kit,LIGHT-AMB-KIT,kit,200.0,14
+76,Floor Mat Set Premium,MAT-FLOOR-PREM,set,150.0,13
+77,Roof Rack Crossbars,RACK-ROOF-BAR,set,250.0,13
+78,Tow Hitch Assembly,HITCH-TOW-ASM,unit,400.0,15
+79,Mud Flap Set,FLAP-MUD-SET,set,60.0,15
+80,Car Cover Weatherproof,COVER-CAR-WP,unit,120.0,20
