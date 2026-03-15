@@ -27,8 +27,6 @@ app.mount("/static/orders", StaticFiles(directory=str(ORDERS_DIR)), name="orders
 class ChatRequest(BaseModel):
     message: str
     user_id: str = "default_user"
-    agent_num2text_enabled: bool = True
-    agent_text2num_enabled: bool = True
     agent_email_enabled: bool = True
     agent_compliance_enabled: bool = True
     agent_pdf_enabled: bool = True
@@ -49,8 +47,6 @@ async def chat_endpoint(request: ChatRequest):
         initial_state = {
             "input_text": request.message,
             "steps": [],
-            "agent_num2text_enabled": request.agent_num2text_enabled,
-            "agent_text2num_enabled": request.agent_text2num_enabled,
             "agent_email_enabled": request.agent_email_enabled,
             "agent_compliance_enabled": request.agent_compliance_enabled,
             "agent_pdf_enabled": request.agent_pdf_enabled,
@@ -632,3 +628,34 @@ async def generate_pdf_endpoint(order_id: int):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- Settings API ---
+from backend.agents.config import get_current_model, update_agent_model
+
+class UpdateModelRequest(BaseModel):
+    agent_name: str
+    model_name: str
+
+@app.get("/settings/models")
+async def get_agent_models():
+    """Returns the currently configured model for each agent."""
+    try:
+        agents = ["orchestrator", "email", "compliance", "po", "forecast"]
+        models = {agent: get_current_model(agent) for agent in agents}
+        return {"status": "success", "models": models}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/settings/models")
+async def update_agent_model_endpoint(request: UpdateModelRequest):
+    """Updates the configured model for a specific agent."""
+    valid_agents = ["orchestrator", "email", "compliance", "po", "forecast"]
+    if request.agent_name not in valid_agents:
+        raise HTTPException(status_code=400, detail=f"Invalid agent_name. Must be one of {valid_agents}")
+        
+    try:
+        update_agent_model(request.agent_name, request.model_name)
+        return {"status": "success", "message": f"Updated {request.agent_name} model to {request.model_name}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

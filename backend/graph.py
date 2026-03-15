@@ -1,7 +1,7 @@
 from typing import TypedDict, Literal
 from langgraph.graph import StateGraph, END
 from backend.agents import (
-    convert_num_to_text, convert_text_to_num, orchestrator_router,
+    orchestrator_router,
     analyze_email_content, run_gatekeeper_checks, explain_compliance_result,
     generate_order_pdf
 )
@@ -17,8 +17,6 @@ class AgentState(TypedDict):
     routing_decision: str
     output_text: str
     steps: list[str]
-    agent_num2text_enabled: bool
-    agent_text2num_enabled: bool
     agent_email_enabled: bool
     agent_compliance_enabled: bool
     agent_pdf_enabled: bool
@@ -45,30 +43,6 @@ def orchestrator_node(state: AgentState):
         "routing_decision": decision, 
         "ui_actions": ui_actions,
         "output_text": chat_response if chat_response else state.get("output_text", ""),
-        "steps": steps
-    }
-
-def agent_num2text_node(state: AgentState):
-    """
-    Executes Num2Text conversion.
-    """
-    result = convert_num_to_text(state["input_text"])
-    steps = list(state.get("steps", []))
-    steps.append(f"Agent A (Num2Text): Converted '{state['input_text']}' to '{result}'.")
-    return {
-        "output_text": result,
-        "steps": steps
-    }
-
-def agent_text2num_node(state: AgentState):
-    """
-    Executes Text2Num conversion.
-    """
-    result = convert_text_to_num(state["input_text"])
-    steps = list(state.get("steps", []))
-    steps.append(f"Agent B (Text2Num): Converted '{state['input_text']}' to '{result}'.")
-    return {
-        "output_text": result,
         "steps": steps
     }
 
@@ -312,17 +286,15 @@ def service_unavailable_node(state: AgentState):
     }
 
 # 3. Define Conditional Logic
-def route_decision(state: AgentState) -> Literal["agent_num2text", "agent_text2num", "agent_email", "agent_compliance", "agent_pdf", "unknown", "service_unavailable"]:
+def route_decision(state: AgentState) -> Literal["agent_email", "agent_compliance", "agent_pdf", "unknown", "service_unavailable"]:
     decision = state["routing_decision"]
     agent_enabled_map = {
-        "num2text":   state.get("agent_num2text_enabled", True),
-        "text2num":   state.get("agent_text2num_enabled", True),
         "email":      state.get("agent_email_enabled", True),
         "compliance": state.get("agent_compliance_enabled", True),
         "pdf":        state.get("agent_pdf_enabled", True),
     }
 
-    if decision in ["num2text", "text2num", "email", "compliance", "pdf"]:
+    if decision in ["email", "compliance", "pdf"]:
         if agent_enabled_map[decision]:
             return f"agent_{decision}"
         else:
@@ -330,13 +302,11 @@ def route_decision(state: AgentState) -> Literal["agent_num2text", "agent_text2n
     
     return "unknown"
 
-# 4. Build Graph
+# Build Graph
 workflow = StateGraph(AgentState)
 
 # Add nodes
 workflow.add_node("orchestrator", orchestrator_node)
-workflow.add_node("agent_num2text", agent_num2text_node)
-workflow.add_node("agent_text2num", agent_text2num_node)
 workflow.add_node("agent_email", agent_email_node)
 workflow.add_node("agent_compliance", compliance_node)
 workflow.add_node("agent_pdf", pdf_node)
@@ -351,8 +321,6 @@ workflow.add_conditional_edges(
     "orchestrator",
     route_decision,
     {
-        "agent_num2text":    "agent_num2text",
-        "agent_text2num":    "agent_text2num",
         "agent_email":       "agent_email",
         "agent_compliance":  "agent_compliance",
         "agent_pdf":         "agent_pdf",
@@ -362,8 +330,6 @@ workflow.add_conditional_edges(
 )
 
 # Add edges to END
-workflow.add_edge("agent_num2text", END)
-workflow.add_edge("agent_text2num", END)
 workflow.add_edge("agent_email", END)
 workflow.add_edge("agent_compliance", END)
 workflow.add_edge("agent_pdf", END)

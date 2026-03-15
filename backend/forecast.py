@@ -6,6 +6,8 @@ from pathlib import Path
 import os
 import ollama
 
+from backend.agents.config import get_current_model
+
 # DB Path matching database.py
 DB_DIR = Path(__file__).resolve().parent / "data"
 DB_NAME = str(DB_DIR / "procurement.db")
@@ -90,9 +92,8 @@ def generate_forecast_report():
 
     stats_json = json.dumps(stats_data, indent=2)
 
-    # Use same routing pattern as agents.py configs if needed, but simplest is direct Ollama
-    # to maintain the fast speed you saw in reference implementation.
-    model_name = os.environ.get("OLLAMA_MODEL", "mistral")
+    # Use the centralized dynamic configuration for consistency across agents
+    model_name = get_current_model("forecast")
     
     try:
         client = ollama.Client() # Assumes default localhost:11434

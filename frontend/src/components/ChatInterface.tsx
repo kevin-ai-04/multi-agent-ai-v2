@@ -15,8 +15,6 @@ export interface Message {
 }
 
 interface ChatInterfaceProps {
-    agentNum2TextEnabled: boolean;
-    agentText2NumEnabled: boolean;
     agentEmailEnabled: boolean;
     agentComplianceEnabled: boolean;
     agentPdfEnabled: boolean;
@@ -31,8 +29,6 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({
-    agentNum2TextEnabled,
-    agentText2NumEnabled,
     agentEmailEnabled,
     agentComplianceEnabled,
     agentPdfEnabled,
@@ -70,8 +66,6 @@ export function ChatInterface({
         try {
             const response = await sendMessage({
                 message: userMessage,
-                agent_num2text_enabled: agentNum2TextEnabled,
-                agent_text2num_enabled: agentText2NumEnabled,
                 agent_email_enabled: agentEmailEnabled,
                 agent_compliance_enabled: agentComplianceEnabled,
                 agent_pdf_enabled: agentPdfEnabled,

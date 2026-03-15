@@ -35,10 +35,12 @@ Copy the following into a file named `.env`:
 OLLAMA_BASE_URL=http://localhost:11434
 
 # Model Selection
-# You can change these to any model you have pulled in Ollama (e.g. llama2, mistral, gemma)
+# You can change these to any model you have pulled in Ollama (e.g. llama3.1, mistral, gemma3:4b)
 ORCHESTRATOR_MODEL=mistral
-NUM2TEXT_MODEL=mistral
-TEXT2NUM_MODEL=mistral
+EMAIL_MODEL=mistral
+COMPLIANCE_MODEL=mistral
+PO_MODEL=mistral
+FORECAST_MODEL=mistral
 ```
 
 ## Installation

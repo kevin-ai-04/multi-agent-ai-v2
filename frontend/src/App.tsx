@@ -21,8 +21,6 @@ import { Button } from "@/components/ui/button"
 
 function App() {
     // Agent Configuration State
-    const [agentNum2TextEnabled, setAgentNum2TextEnabled] = useState(true)
-    const [agentText2NumEnabled, setAgentText2NumEnabled] = useState(true)
     const [agentEmailEnabled, setAgentEmailEnabled] = useState(true)
     const [agentComplianceEnabled, setAgentComplianceEnabled] = useState(true)
     const [agentPdfEnabled, setAgentPdfEnabled] = useState(true)
@@ -85,10 +83,6 @@ function App() {
     return (
         <div className="flex h-screen w-full overflow-hidden mesh-gradient text-foreground transition-colors duration-500">
             <Sidebar
-                agentNum2TextEnabled={agentNum2TextEnabled}
-                setAgentNum2TextEnabled={setAgentNum2TextEnabled}
-                agentText2NumEnabled={agentText2NumEnabled}
-                setAgentText2NumEnabled={setAgentText2NumEnabled}
                 agentEmailEnabled={agentEmailEnabled}
                 setAgentEmailEnabled={setAgentEmailEnabled}
                 agentComplianceEnabled={agentComplianceEnabled}
@@ -153,8 +147,6 @@ function App() {
                         {/* Home View (Chat Full Screen) */}
                         {activeView === 'home' && (
                             <ChatInterface
-                                agentNum2TextEnabled={agentNum2TextEnabled}
-                                agentText2NumEnabled={agentText2NumEnabled}
                                 agentEmailEnabled={agentEmailEnabled}
                                 agentComplianceEnabled={agentComplianceEnabled}
                                 agentPdfEnabled={agentPdfEnabled}
@@ -217,8 +209,6 @@ function App() {
                             </div>
                             <div className="flex-1 overflow-hidden">
                                 <ChatInterface
-                                    agentNum2TextEnabled={agentNum2TextEnabled}
-                                    agentText2NumEnabled={agentText2NumEnabled}
                                     agentEmailEnabled={agentEmailEnabled}
                                     agentComplianceEnabled={agentComplianceEnabled}
                                     agentPdfEnabled={agentPdfEnabled}

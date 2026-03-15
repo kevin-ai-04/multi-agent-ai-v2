@@ -3,7 +3,7 @@ Compliance / Gatekeeper Agent: Rule-based checks and LLM-powered explanations.
 """
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from backend.agents.config import compliance_llm
+from backend.agents.config import get_compliance_llm
 
 
 def run_gatekeeper_checks(analysis: dict) -> dict:
@@ -128,7 +128,7 @@ Write a concise 2-4 sentence explanation:
 Keep it professional and direct. Do NOT use bullet points."""
 
     try:
-        response = compliance_llm.invoke([
+        response = get_compliance_llm().invoke([
             SystemMessage(content="You are a professional procurement compliance officer. Respond in plain English only, no JSON, no bullet points."),
             HumanMessage(content=prompt)
         ])

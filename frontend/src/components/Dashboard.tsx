@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Brain, Activity, Terminal, ArrowRight, CheckCircle2, Clock, AlertCircle, Calculator, Type, Mail, Shield, ShoppingCart, TrendingUp } from "lucide-react";
+import { Brain, Activity, Terminal, ArrowRight, CheckCircle2, Clock, AlertCircle, Mail, Shield, ShoppingCart, TrendingUp, Cpu } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Message } from "./ChatInterface";
@@ -14,6 +14,7 @@ interface DashboardProps {
 interface Agent {
     id: string;
     key: string; // Used for matching logs
+    agentSettingsKey?: string; // key used in /settings/models API
     name: string;
     role: string;
     status: "active" | "idle" | "thinking" | "error";
@@ -22,12 +23,14 @@ interface Agent {
     description: string;
     thoughts: string[];
     capabilities: string[];
+    model?: string;
 }
 
 const initialAgents: Agent[] = [
     {
         id: "orch-01",
         key: "Orchestrator",
+        agentSettingsKey: "orchestrator",
         name: "Orchestrator",
         role: "System Coordinator",
         status: "idle",
@@ -35,11 +38,13 @@ const initialAgents: Agent[] = [
         color: "from-purple-500 to-indigo-600",
         description: "Central neural unit responsible for breaking down user requests and delegating sub-tasks to specialized agents.",
         thoughts: ["System initialized.", "Waiting for input..."],
-        capabilities: ["Intent Classification", "Task Delegation", "Context Management"]
+        capabilities: ["Intent Classification", "Task Delegation", "Context Management"],
+        model: "Loading..."
     },
     {
         id: "agent-email-05",
         key: "Email Agent",
+        agentSettingsKey: "email",
         name: "Email Agent",
         role: "Communication",
         status: "idle",
@@ -47,11 +52,13 @@ const initialAgents: Agent[] = [
         color: "from-sky-500 to-blue-600",
         description: "Handles incoming and outgoing email communications, extracting orders or vendor queries.",
         thoughts: ["Model loaded.", "Monitoring inbox..."],
-        capabilities: ["Email Parsing", "Supplier Search", "Cost Calculation"]
+        capabilities: ["Email Parsing", "Supplier Search", "Cost Calculation"],
+        model: "Loading..."
     },
     {
         id: "agent-comp-06",
         key: "Compliance Agent",
+        agentSettingsKey: "compliance",
         name: "Compliance Agent",
         role: "Policy Enforcer",
         status: "idle",
@@ -59,11 +66,13 @@ const initialAgents: Agent[] = [
         color: "from-rose-500 to-red-600",
         description: "Checks procurement requests against company policies, budget limits, and vendor restrictions.",
         thoughts: ["Policies loaded.", "Ready for validation."],
-        capabilities: ["Policy Check", "Budget Approval"]
+        capabilities: ["Policy Check", "Budget Approval"],
+        model: "Loading..."
     },
     {
         id: "agent-order-07",
         key: "Order Agent",
+        agentSettingsKey: "po",
         name: "Order Agent",
         role: "Order Management",
         status: "idle",
@@ -71,11 +80,13 @@ const initialAgents: Agent[] = [
         color: "from-amber-500 to-yellow-600",
         description: "Processes and tracks purchase orders, managing interactions with the inventory system.",
         thoughts: ["System connected.", "Awaiting orders."],
-        capabilities: ["Order Creation", "Status Tracking"]
+        capabilities: ["Order Creation", "Status Tracking"],
+        model: "Loading..."
     },
     {
         id: "agent-forecast-08",
         key: "Forecast Agent",
+        agentSettingsKey: "forecast",
         name: "Forecast Agent",
         role: "Predictive Analytics",
         status: "idle",
@@ -83,32 +94,9 @@ const initialAgents: Agent[] = [
         color: "from-teal-500 to-emerald-600",
         description: "Analyzes historical data to predict future inventory needs and suggest restock timelines.",
         thoughts: ["Data models loaded.", "Ready for analysis."],
-        capabilities: ["Trend Prediction", "Demand Forecasting"]
+        capabilities: ["Trend Prediction", "Demand Forecasting"],
+        model: "Loading..."
     },
-    // {
-    //     id: "agent-a-02",
-    //     key: "Agent A",
-    //     name: "Agent A (Num2Text)",
-    //     role: "Numeric Converter",
-    //     status: "idle",
-    //     icon: Type,
-    //     color: "from-blue-500 to-cyan-500",
-    //     description: "Specialized language model trained to convert numeric input (123) into natural language text (one hundred twenty-three).",
-    //     thoughts: ["Model loaded.", "Standing by."],
-    //     capabilities: ["Number Parsing", "Language Generation"]
-    // },
-    // {
-    //     id: "agent-b-03",
-    //     key: "Agent B",
-    //     name: "Agent B (Text2Num)",
-    //     role: "Semantic Parser",
-    //     status: "idle",
-    //     icon: Calculator,
-    //     color: "from-green-500 to-emerald-600",
-    //     description: "Specialized in extracting numeric values from natural language text and converting them to integer format.",
-    //     thoughts: ["Model loaded.", "Standing by."],
-    //     capabilities: ["Semantic Analysis", "Pattern Matching"]
-    // },
     {
         id: "sys-04",
         key: "System",
@@ -127,6 +115,40 @@ export function Dashboard({ messages, isLoading }: DashboardProps) {
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
     const [agents, setAgents] = useState<Agent[]>(initialAgents);
     const [uptime, setUptime] = useState("0h 0m 0s");
+
+    // Fetch models on mount
+    useEffect(() => {
+        let isMounted = true;
+        
+        const fetchModels = async () => {
+            try {
+                const res = await fetch("http://localhost:8000/settings/models");
+                if (!res.ok) throw new Error("Failed to fetch models");
+                const data = await res.json();
+                
+                if (isMounted && data.status === "success") {
+                    setAgents(prev => prev.map(agent => {
+                        if (agent.agentSettingsKey && data.models[agent.agentSettingsKey]) {
+                            return { ...agent, model: data.models[agent.agentSettingsKey] };
+                        }
+                        return agent;
+                    }));
+                }
+            } catch (err) {
+                console.error("Error fetching agent models:", err);
+            }
+        };
+
+        fetchModels();
+        
+        // Also set up a small polling interval to keep dashboard models in sync if changed in Settings
+        const interval = setInterval(fetchModels, 30000);
+        
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, []);
 
     // Real-time uptime ticker
     useEffect(() => {
@@ -215,7 +237,7 @@ export function Dashboard({ messages, isLoading }: DashboardProps) {
                         <p className="text-muted-foreground">Real-time telemetry of the active agent swarm.</p>
                     </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                         {agents.map((agent, index) => (
                             <motion.div
                                 key={agent.id}
@@ -229,8 +251,8 @@ export function Dashboard({ messages, isLoading }: DashboardProps) {
                                 {/* Dynamic Glow Background */}
                                 <div className={`absolute -inset-0.5 bg-gradient-to-r ${agent.color} rounded-xl opacity-20 group-hover:opacity-60 blur transition duration-500`} />
 
-                                <Card className="relative h-full bg-white/60 dark:bg-black/40 backdrop-blur-xl border-black/5 dark:border-white/10 overflow-hidden hover:bg-white/80 dark:hover:bg-black/60 transition-colors shadow-sm">
-                                    <CardHeader>
+                                <Card className="relative h-full bg-white/60 dark:bg-black/40 backdrop-blur-xl border-black/5 dark:border-white/10 overflow-hidden hover:bg-white/80 dark:hover:bg-black/60 transition-colors shadow-sm flex flex-col">
+                                    <CardHeader className="pb-4">
                                         <div className="flex justify-between items-start mb-2">
                                             <div className={`p-3 rounded-lg bg-gradient-to-br ${agent.color} bg-opacity-10 dark:bg-opacity-20`}>
                                                 <agent.icon className="w-6 h-6 text-white" />
@@ -240,11 +262,23 @@ export function Dashboard({ messages, isLoading }: DashboardProps) {
                                         <CardTitle className="text-xl text-foreground">{agent.name}</CardTitle>
                                         <CardDescription className="text-muted-foreground">{agent.role}</CardDescription>
                                     </CardHeader>
-                                    <CardContent>
-                                        <p className="text-sm text-muted-foreground/80 line-clamp-3 mb-4 h-10">
-                                            {agent.description}
-                                        </p>
-                                        <div className="flex items-center text-xs text-blue-600 dark:text-blue-400 font-medium group-hover:translate-x-1 transition-transform mt-4">
+                                    <CardContent className="flex flex-col flex-1 h-full">
+                                        <div className="h-[60px] mb-4">
+                                            <p className="text-sm text-muted-foreground/80 line-clamp-3">
+                                                {agent.description}
+                                            </p>
+                                        </div>
+
+                                        {/* Model display inside card */}
+                                        {agent.model && (
+                                            <div className="flex items-center gap-1.5 mb-4 text-xs font-medium text-slate-600 dark:text-slate-400 bg-black/5 dark:bg-white/5 w-fit px-2.5 py-1 rounded-md border border-black/5 dark:border-white/10">
+                                                <Cpu className="w-3.5 h-3.5" />
+                                                <span>Model:</span>
+                                                <span className="text-foreground tracking-tight">{agent.model}</span>
+                                            </div>
+                                        )}
+                                        
+                                        <div className="flex items-center text-xs text-blue-600 dark:text-blue-400 font-medium group-hover:translate-x-1 transition-transform mt-auto">
                                             View Logs <ArrowRight className="w-3 h-3 ml-1" />
                                         </div>
                                     </CardContent>
@@ -302,6 +336,24 @@ export function Dashboard({ messages, isLoading }: DashboardProps) {
 
                             <ScrollArea className="flex-1">
                                 <div className="p-8 space-y-8">
+
+                                    {/* Selected Model Details */}
+                                    {selectedAgent.model && (
+                                        <div>
+                                            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                                                <Cpu className="w-4 h-4" /> Configured Engine
+                                            </h3>
+                                            <div className="flex flex-col bg-blue-50/50 dark:bg-blue-900/10 rounded-lg p-4 border border-blue-100 dark:border-blue-900/30">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-slate-600 dark:text-slate-400">Current LLM:</span>
+                                                    <Badge variant="outline" className="bg-white dark:bg-black text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">
+                                                        {selectedAgent.model}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Capabilities */}
                                     <div>
                                         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">

@@ -6,7 +6,7 @@ from datetime import datetime
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from backend.agents.config import po_llm
+from backend.agents.config import get_po_llm
 
 
 def generate_po_content(order: dict) -> str:
@@ -34,7 +34,7 @@ Include: greeting, order specifics, expected delivery urgency based on priority,
 Keep it formal, concise, and ready to send. Do NOT add any JSON or formatting tags."""
 
     try:
-        response = po_llm.invoke([
+        response = get_po_llm().invoke([
             SystemMessage(content="You are a procurement officer writing formal business documents."),
             HumanMessage(content=prompt)
         ])

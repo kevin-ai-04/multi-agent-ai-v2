@@ -2,8 +2,6 @@ const API_BASE_URL = "http://localhost:8000";
 
 interface ChatRequest {
     message: string;
-    agent_num2text_enabled: boolean;
-    agent_text2num_enabled: boolean;
     agent_email_enabled: boolean;
     agent_compliance_enabled: boolean;
     agent_pdf_enabled: boolean;

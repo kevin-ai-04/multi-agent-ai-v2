@@ -11,29 +11,12 @@ st.set_page_config(
 # Sidebar
 with st.sidebar:
     st.header("System Control")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        agent_a_enabled = st.toggle("Enable Agent A (Num2Text)", value=True)
-    with col2:
-        agent_b_enabled = st.toggle("Enable Agent B (Text2Num)", value=True)
-    
-    st.divider()
-    
-    st.subheader("System Status")
-    if agent_a_enabled and agent_b_enabled:
-        st.success("System Online: All Agents Active")
-    elif not agent_a_enabled and not agent_b_enabled:
-        st.error("System Offline: All Agents Disabled")
-    else:
-        st.warning("System Degraded: Some Agents Disabled")
+    st.info("Agent controls are now handled in the main web UI.")
 
 # Main Interface
 st.title("🤖 Multi-Agent Procurement System")
 st.markdown("""
-This system uses a central **Orchestrator** to route your input to the appropriate specialist agent:
-- **Agent A (Num2Text)**: Converts digits to text (e.g., 42 -> forty-two)
-- **Agent B (Text2Num)**: Converts text to digits (e.g., one hundred -> 100)
+This system uses a central **Orchestrator** to route your input to the appropriate specialist agent.
 """)
 
 # Chat History initialization
@@ -63,9 +46,7 @@ if prompt := st.chat_input("Enter a number or text to convert..."):
             
             # Prepare inputs
             inputs = {
-                "input_text": prompt,
-                "agent_a_enabled": agent_a_enabled,
-                "agent_b_enabled": agent_b_enabled
+                "input_text": prompt
             }
             
             # Run graph

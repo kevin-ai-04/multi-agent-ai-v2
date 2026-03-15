@@ -68,8 +68,8 @@ export function DocsPage() {
                             </p>
                             <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
                                 <li><strong>State Management:</strong> Maintains the global context across sub-agents using LangGraph's state dictionary.</li>
-                                <li><strong>Dynamic Routing:</strong> Evaluates incoming prompts to decide the agent route: <code>email</code>, <code>compliance</code>, <code>pdf</code>, <code>num2text</code>, <code>text2num</code>, or <code>forecast</code>.</li>
-                                <li><strong>Instance Scaling:</strong> Uses 8 specialized LLM instances orchestrated to segregate responsibilities (routing, translation, extraction, compliance explanation, PO writing, forecasting).</li>
+                                <li><strong>Dynamic Routing:</strong> Evaluates incoming prompts to decide the agent route: <code>email</code>, <code>compliance</code>, <code>pdf</code>, or <code>forecast</code>.</li>
+                                <li><strong>Instance Scaling:</strong> Uses 8 specialized LLM instances orchestrated to segregate responsibilities (routing, extraction, compliance explanation, PO writing, forecasting).</li>
                             </ul>
                         </Card>
 
@@ -130,20 +130,6 @@ export function DocsPage() {
                                 <li><strong>Inventory Monitoring:</strong> Continuously polls the `inventory` table against the `min_qty` limits.</li>
                                 <li><strong>Predictive Analytics:</strong> Uses historical order velocity to predict when an item will stock out based on current `qty_on_hand`.</li>
                                 <li><strong>Autonomous Drafting:</strong> When a stock-out is predicted, it autonomously prepares a "Restock Draft" email and queues it for the Orchestrator to notify the user.</li>
-                            </ul>
-                        </Card>
-
-                        <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm md:col-span-2">
-                            <h4 className="font-bold text-xl mb-3 flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)]"></span> Neural Transformers (Num2Text / Text2Num)
-                            </h4>
-                            <p className="text-foreground/90 leading-relaxed mb-4">
-                                Specialized utility agents for linguistic and numerical data transformation.
-                            </p>
-                            <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
-                                <li><strong>Integer to Prose:</strong> Converts complex numerical figures into human-readable text strings (e.g. 1024 &rarr; "one thousand twenty four").</li>
-                                <li><strong>Prose to Integer:</strong> Parses natural language numerical expressions back into machine-usable integers.</li>
-                                <li><strong>Modular Activation:</strong> Demonstrates the platform's ability to hot-swap individual neural capabilities via the sidebar toggles.</li>
                             </ul>
                         </Card>
                     </section>
@@ -243,11 +229,6 @@ export function DocsPage() {
                                         <td className="px-4 py-3 font-mono text-xs">"show high priority emails"</td>
                                         <td className="px-4 py-3"><span className="px-2 py-1 bg-gray-500/10 text-gray-600 rounded">unknown</span></td>
                                         <td className="px-4 py-3 text-muted-foreground">Orchestrator generates Client UI Action → Fires <code>redirect</code> to Emails tab + <code>filter: High</code></td>
-                                    </tr>
-                                    <tr>
-                                        <td className="px-4 py-3 font-mono text-xs">"42" / "forty two"</td>
-                                        <td className="px-4 py-3"><span className="px-2 py-1 bg-blue-500/10 text-blue-600 rounded">num2text</span> / <span className="px-2 py-1 bg-blue-500/10 text-blue-600 rounded">text2num</span></td>
-                                        <td className="px-4 py-3 text-muted-foreground">Trigger pure demonstration conversational agents for simple text/integer transformations.</td>
                                     </tr>
                                 </tbody>
                             </table>

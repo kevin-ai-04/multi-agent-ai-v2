@@ -7,10 +7,6 @@ import { Bot, ChevronLeft, ChevronRight, Home, Settings as SettingsIcon, Mail, L
 import { NavItem } from "./NavItem"
 
 interface SidebarProps {
-    agentNum2TextEnabled: boolean;
-    setAgentNum2TextEnabled: (enabled: boolean) => void;
-    agentText2NumEnabled: boolean;
-    setAgentText2NumEnabled: (enabled: boolean) => void;
     agentEmailEnabled: boolean;
     setAgentEmailEnabled: (enabled: boolean) => void;
     agentComplianceEnabled: boolean;
@@ -27,10 +23,6 @@ interface SidebarProps {
 }
 
 export function Sidebar({
-    agentNum2TextEnabled,
-    setAgentNum2TextEnabled,
-    agentText2NumEnabled,
-    setAgentText2NumEnabled,
     agentEmailEnabled,
     setAgentEmailEnabled,
     agentComplianceEnabled,
@@ -185,20 +177,6 @@ export function Sidebar({
                             <p className="text-xs text-muted-foreground mt-1">Active Neural Modules</p>
                         </div>
                         <div className="p-4 grid gap-4">
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm">Num2Text</label>
-                                <Switch
-                                    checked={agentNum2TextEnabled}
-                                    onCheckedChange={setAgentNum2TextEnabled}
-                                />
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm">Text2Num</label>
-                                <Switch
-                                    checked={agentText2NumEnabled}
-                                    onCheckedChange={setAgentText2NumEnabled}
-                                />
-                            </div>
                             <div className="flex items-center justify-between">
                                 <label className="text-sm">Email Analyzer</label>
                                 <Switch
