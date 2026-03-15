@@ -188,10 +188,10 @@ export function NewOrderPage() {
                         <ShoppingCart className="w-6 h-6 text-blue-500" />
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                        Comprehensive Procurement Setup
+                        Place New Order
                     </h1>
                     <p className="text-muted-foreground max-w-lg mx-auto">
-                        Search the catalog, configure expected times, and instantly auto-fill parameters.
+                        Search the catalog.
                     </p>
                 </div>
 
@@ -338,8 +338,8 @@ export function NewOrderPage() {
                             {complianceResult?.passed && (
                                 <Button
                                     className={`w-full h-14 text-lg font-bold shadow-xl transition-all active:scale-[0.98] ${!!orderResult
-                                            ? "bg-green-600 hover:bg-green-500 text-white shadow-green-600/20"
-                                            : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/20"
+                                        ? "bg-green-600 hover:bg-green-500 text-white shadow-green-600/20"
+                                        : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/20"
                                         }`}
                                     onClick={handleCreateOrder}
                                     disabled={isOrdering || !!orderResult}

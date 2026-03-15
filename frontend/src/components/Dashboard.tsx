@@ -52,7 +52,7 @@ const initialAgents: Agent[] = [
     {
         id: "agent-comp-06",
         key: "Compliance Agent",
-        name: "Compliance Agent (WIP)",
+        name: "Compliance Agent",
         role: "Policy Enforcer",
         status: "idle",
         icon: Shield,
@@ -64,7 +64,7 @@ const initialAgents: Agent[] = [
     {
         id: "agent-order-07",
         key: "Order Agent",
-        name: "Order Agent (WIP)",
+        name: "Order Agent",
         role: "Order Management",
         status: "idle",
         icon: ShoppingCart,
@@ -76,7 +76,7 @@ const initialAgents: Agent[] = [
     {
         id: "agent-forecast-08",
         key: "Forecast Agent",
-        name: "Forecast Agent (WIP)",
+        name: "Forecast Agent",
         role: "Predictive Analytics",
         status: "idle",
         icon: TrendingUp,
@@ -85,30 +85,30 @@ const initialAgents: Agent[] = [
         thoughts: ["Data models loaded.", "Ready for analysis."],
         capabilities: ["Trend Prediction", "Demand Forecasting"]
     },
-    {
-        id: "agent-a-02",
-        key: "Agent A",
-        name: "Agent A (Num2Text)",
-        role: "Numeric Converter",
-        status: "idle",
-        icon: Type,
-        color: "from-blue-500 to-cyan-500",
-        description: "Specialized language model trained to convert numeric input (123) into natural language text (one hundred twenty-three).",
-        thoughts: ["Model loaded.", "Standing by."],
-        capabilities: ["Number Parsing", "Language Generation"]
-    },
-    {
-        id: "agent-b-03",
-        key: "Agent B",
-        name: "Agent B (Text2Num)",
-        role: "Semantic Parser",
-        status: "idle",
-        icon: Calculator,
-        color: "from-green-500 to-emerald-600",
-        description: "Specialized in extracting numeric values from natural language text and converting them to integer format.",
-        thoughts: ["Model loaded.", "Standing by."],
-        capabilities: ["Semantic Analysis", "Pattern Matching"]
-    },
+    // {
+    //     id: "agent-a-02",
+    //     key: "Agent A",
+    //     name: "Agent A (Num2Text)",
+    //     role: "Numeric Converter",
+    //     status: "idle",
+    //     icon: Type,
+    //     color: "from-blue-500 to-cyan-500",
+    //     description: "Specialized language model trained to convert numeric input (123) into natural language text (one hundred twenty-three).",
+    //     thoughts: ["Model loaded.", "Standing by."],
+    //     capabilities: ["Number Parsing", "Language Generation"]
+    // },
+    // {
+    //     id: "agent-b-03",
+    //     key: "Agent B",
+    //     name: "Agent B (Text2Num)",
+    //     role: "Semantic Parser",
+    //     status: "idle",
+    //     icon: Calculator,
+    //     color: "from-green-500 to-emerald-600",
+    //     description: "Specialized in extracting numeric values from natural language text and converting them to integer format.",
+    //     thoughts: ["Model loaded.", "Standing by."],
+    //     capabilities: ["Semantic Analysis", "Pattern Matching"]
+    // },
     {
         id: "sys-04",
         key: "System",
