@@ -19,6 +19,50 @@ def init_db():
     # We just ensure the directory exists here just in case.
     DB_DIR.mkdir(parents=True, exist_ok=True)
 
+def log_audit_action(action: str, entity_type: str, entity_id: str = None, details: dict = None, user_id: str = "system"):
+    """
+    Logs an action to the audit_logs table.
+    """
+    conn = get_db_connection()
+    c = conn.cursor()
+    details_json = json.dumps(details) if details else None
+    
+    try:
+        c.execute('''
+            INSERT INTO audit_logs (action, entity_type, entity_id, details, user_id)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (action, entity_type, str(entity_id) if entity_id else None, details_json, user_id))
+        conn.commit()
+    except Exception as e:
+        print(f"Failed to write audit log: {e}")
+    finally:
+        conn.close()
+
+def get_audit_logs(limit=100, offset=0):
+    """
+    Retrieves recent audit logs.
+    """
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT * FROM audit_logs
+        ORDER BY timestamp DESC
+        LIMIT ? OFFSET ?
+    ''', (limit, offset))
+    rows = c.fetchall()
+    conn.close()
+    
+    result = []
+    for row in rows:
+        r = dict(row)
+        if r['details']:
+            try:
+                r['details'] = json.loads(r['details'])
+            except:
+                pass
+        result.append(r)
+    return result
+
 
 def save_emails(emails):
     """
@@ -139,6 +183,8 @@ def update_table_row(table_name: str, original_row: dict, updated_row: dict):
     finally:
         conn.close()
         
+    log_audit_action("UPDATE", table_name, None, {"original": original_row, "updated": updated_row})
+        
     return True
 
 def delete_table_data(table_name: str):
@@ -154,6 +200,8 @@ def delete_table_data(table_name: str):
         conn.commit()
     finally:
         conn.close()
+        
+    log_audit_action("DELETE_ALL", table_name)
     return True
 
 # --- Email Analysis Features ---
@@ -356,6 +404,8 @@ def save_email_analysis(email_id: str, analysis_data: dict, item_data: dict, ven
     
     conn.commit()
     conn.close()
+    
+    log_audit_action("CREATE_OR_UPDATE", "email_analysis", email_id, {"priority": analysis_data.get('priority'), "item_name": analysis_data.get('item_name')})
     return True
 
 
@@ -395,9 +445,12 @@ def create_order(item_id: int, vendor_id: int, qty: int, amount: float) -> int:
             (item_id, qty, vendor_id, amount)
         )
         conn.commit()
-        return c.lastrowid
+        order_id = c.lastrowid
     finally:
         conn.close()
+
+    log_audit_action("CREATE", "orders", order_id, {"item_id": item_id, "vendor_id": vendor_id, "qty": qty, "amount": amount})
+    return order_id
 
 
 def get_orders():

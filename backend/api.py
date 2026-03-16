@@ -278,7 +278,7 @@ async def get_email_analysis_endpoint(email_id: str):
 
 @app.post("/procurement/manual/compliance")
 async def manual_compliance_check(payload: dict):
-    from backend.database import get_item_by_name, get_vendor
+    from backend.database import get_item_by_name, get_vendor, log_audit_action
     from backend.agents import run_gatekeeper_checks, explain_compliance_result
     
     item_name = payload.get("item_name")
@@ -325,6 +325,8 @@ async def manual_compliance_check(payload: dict):
     gate = run_gatekeeper_checks(fake_analysis)
     explanation = explain_compliance_result(fake_analysis, gate)
     
+    log_audit_action("MANUAL_COMPLIANCE_CHECK", "item", item['id'], {"item_name": item_name, "quantity": quantity, "passed": gate['passed']})
+    
     return {
         "status": "success",
         "passed": gate['passed'],
@@ -335,7 +337,7 @@ async def manual_compliance_check(payload: dict):
 
 @app.post("/procurement/manual/order")
 async def manual_order_create(payload: dict):
-    from backend.database import create_order, get_order_by_id as db_get_order_by_id
+    from backend.database import create_order, get_order_by_id as db_get_order_by_id, log_audit_action
     from backend.agents import generate_order_pdf
     
     context = payload.get("context")
@@ -630,5 +632,15 @@ async def generate_pdf_endpoint(order_id: int):
             filename=f"PO_{order_id}.pdf",
             media_type="application/pdf"
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Audit Logs API ---
+@app.get("/audit_logs")
+async def api_get_audit_logs(limit: int = 100, offset: int = 0):
+    try:
+        from backend.database import get_audit_logs
+        logs = get_audit_logs(limit=limit, offset=offset)
+        return {"status": "success", "logs": logs}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

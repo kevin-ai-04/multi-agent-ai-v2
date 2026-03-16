@@ -9,6 +9,7 @@ import { DatabasePage } from "@/components/DatabasePage"
 import { NewOrderPage } from "@/components/NewOrderPage"
 import { OrdersPage } from "@/components/OrdersPage"
 import { ForecastPage } from "@/components/ForecastPage"
+import { AuditLogsPage } from "@/components/AuditLogsPage"
 import "@/index.css"
 import {
     DropdownMenu,
@@ -30,7 +31,7 @@ function App() {
 
     // UI State
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-    const [activeView, setActiveView] = useState<"home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast">("home")
+    const [activeView, setActiveView] = useState<"home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast" | "audit_logs">("home")
     const [emailFolder, setEmailFolder] = useState("inbox")
 
     // Email Filter State (Lifted for LLM control)
@@ -141,6 +142,7 @@ function App() {
                                 {activeView === 'database' && 'Database Viewer'}
                                 {activeView === 'settings' && 'Settings'}
                                 {activeView === 'forecast' && 'Predictive Forecast'}
+                                {activeView === 'audit_logs' && 'Audit Logs'}
                             </h1>
                         )}
                     </div>
@@ -197,6 +199,9 @@ function App() {
 
                         {/* Database View */}
                         {activeView === 'database' && <DatabasePage />}
+
+                        {/* Audit Logs View */}
+                        {activeView === 'audit_logs' && <AuditLogsPage />}
 
                         {/* New Order Form View */}
                         {activeView === 'new_order' && <NewOrderPage />}

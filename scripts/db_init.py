@@ -87,6 +87,16 @@ CREATE TABLE IF NOT EXISTS email_analysis (
     FOREIGN KEY(order_id) REFERENCES orders(id)
 );
 
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT,
+    details TEXT,
+    user_id TEXT DEFAULT 'system',
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 """
 
 conn = sqlite3.connect(str(DB_PATH))

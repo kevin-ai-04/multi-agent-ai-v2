@@ -3,7 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
-import { Bot, ChevronLeft, ChevronRight, Home, Settings as SettingsIcon, Mail, LayoutDashboard, Book, Database, PlusCircle, ShoppingCart, TrendingUp } from "lucide-react"
+import { Bot, ChevronLeft, ChevronRight, Home, Settings as SettingsIcon, Mail, LayoutDashboard, Book, Database, PlusCircle, ShoppingCart, TrendingUp, Activity } from "lucide-react"
 import { NavItem } from "./NavItem"
 
 interface SidebarProps {
@@ -19,8 +19,8 @@ interface SidebarProps {
     setAgentPdfEnabled: (enabled: boolean) => void;
     agentForecastEnabled: boolean;
     setAgentForecastEnabled: (enabled: boolean) => void;
-    activeView: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast";
-    setActiveView: (view: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast") => void;
+    activeView: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast" | "audit_logs";
+    setActiveView: (view: "home" | "emails" | "settings" | "dashboard" | "docs" | "database" | "new_order" | "orders" | "forecast" | "audit_logs") => void;
     isCollapsed: boolean;
     setIsCollapsed: (collapsed: boolean) => void;
     onNewOrder: () => void;
@@ -142,6 +142,14 @@ export function Sidebar({
                         view="database"
                         icon={Database}
                         label="Database"
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                        isCollapsed={isCollapsed}
+                    />
+                    <NavItem
+                        view="audit_logs"
+                        icon={Activity}
+                        label="Audit Logs"
                         activeView={activeView}
                         setActiveView={setActiveView}
                         isCollapsed={isCollapsed}
