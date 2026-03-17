@@ -18,9 +18,9 @@ export function DocsPage() {
                     {/* Introduction */}
                     <div className="space-y-4">
                         <h1 className="text-4xl font-bold tracking-tight text-foreground">
-                            Multi-Agent Procurement Management
+                            Multi-Agent Procurement & Neural Processing
                         </h1>
-                        v26.04.01-002 (Inline Chat Procurement & Orders Ledger)
+                        v26.03.14-001 (Consolidated Ledger & Neural Modules)
                         <p className="text-muted-foreground leading-relaxed">
                             This system is a sophisticated demonstration of a <strong>Multi-Agent AI Architecture</strong> tailored for autonomous procurement workflows.
                             It utilizes a localized orchestration layer to manage specialized agents (Email, Compliance, Orders, Forecasting), ensuring accuracy, policy adherence, and offline capability.
@@ -68,8 +68,8 @@ export function DocsPage() {
                             </p>
                             <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
                                 <li><strong>State Management:</strong> Maintains the global context across sub-agents using LangGraph's state dictionary.</li>
-                                <li><strong>Dynamic Routing:</strong> Evaluates incoming prompts to decide the agent route: <code>email</code>, <code>compliance</code>, <code>pdf</code>, <code>num2text</code>/<code>text2num</code>, or <code>unknown</code> (UI navigation/banter).</li>
-                                <li><strong>Instance Scaling:</strong> Uses 6 distinct LLM instances natively orchestrated to segregate responsibilities (routing, translation, extraction, compliance explanation, PO writing).</li>
+                                <li><strong>Dynamic Routing:</strong> Evaluates incoming prompts to decide the agent route: <code>email</code>, <code>compliance</code>, <code>pdf</code>, or <code>forecast</code>.</li>
+                                <li><strong>Instance Scaling:</strong> Uses 8 specialized LLM instances orchestrated to segregate responsibilities (routing, extraction, compliance explanation, PO writing, forecasting).</li>
                             </ul>
                         </Card>
 
@@ -99,7 +99,7 @@ export function DocsPage() {
                                 <li><strong>Gatekeeper Logic (3 Rules):</strong> Enforces Inventory Capacity limits (<code>max_capacity</code>), Department Budget constraints (<code>limit_amount</code>), and Policy regulations (<code>max_single_order_amount</code>, vendor approval rating).</li>
                                 <li><strong>Semantic Budget Routing:</strong> Automatically categorizes and maps requested items to their correct corporate department (e.g. "Lithium Battery" &rarr; "Battery Dept") ensuring accurate budget deduction.</li>
                                 <li><strong>LLM Explainer:</strong> Processes rule-based pass/fail outcomes into natural, reader-friendly prose, translating technical "Failed on vendor_score &lt; 70" into actionable plain English recommendations.</li>
-                                <li><strong>Automated Drafting:</strong> Successfully compliant emails automatically generate <code>DRAFT</code> status entries in the <code>orders</code> table.</li>
+                                <li><strong>Automated Drafting:</strong> Successfully compliant emails automatically generate verified entries in the <code>orders</code> table.</li>
                             </ul>
                         </Card>
 
@@ -108,7 +108,7 @@ export function DocsPage() {
                                 <span className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]"></span> Order & PDF Agent
                             </h4>
                             <p className="text-foreground/90 leading-relaxed mb-4">
-                                The execution arm of the system. Transitions valid DRAFT orders into legally binding, printable Purchase Order PDFs.
+                                The execution arm of the system. Transitions valid compliant requests into legally binding, printable Purchase Order PDFs.
                             </p>
                             <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
                                 <li><strong>LLM Letter Drafting:</strong> Generates context-aware formal textual PO bodies utilizing specific database inputs (items, units, vendor names).</li>
@@ -182,7 +182,7 @@ export function DocsPage() {
                                 <div>
                                     <h4 className="font-semibold">Orders Ledger</h4>
                                     <p className="text-sm text-muted-foreground mt-1">
-                                        A pristine ledger view of all historical purchase orders and active DRAFTs, complete with dynamic PDF generation paths and integrated item-vendor cross mapping.
+                                        A pristine ledger view of all historical purchase orders and active procurement records, complete with dynamic PDF generation paths and integrated item-vendor cross mapping.
                                     </p>
                                 </div>
                             </Card>
@@ -213,12 +213,12 @@ export function DocsPage() {
                                     <tr>
                                         <td className="px-4 py-3 font-mono text-xs">"analyze emails"</td>
                                         <td className="px-4 py-3"><span className="px-2 py-1 bg-sky-500/10 text-sky-600 rounded">email</span></td>
-                                        <td className="px-4 py-3 text-muted-foreground">Fetches unanalyzed emails → AI extract → Database Lookup → Runs full compliance → Creates DRAFT</td>
+                                        <td className="px-4 py-3 text-muted-foreground">Fetches unanalyzed emails → AI extract → Database Lookup → Runs full compliance → Creates Order entry</td>
                                     </tr>
                                     <tr>
                                         <td className="px-4 py-3 font-mono text-xs">"run compliance checks"</td>
                                         <td className="px-4 py-3"><span className="px-2 py-1 bg-rose-500/10 text-rose-600 rounded">compliance</span></td>
-                                        <td className="px-4 py-3 text-muted-foreground">Iterates ALL historical `email_analysis` records → Re-runs gatekeeper → Creates DRAFTs</td>
+                                        <td className="px-4 py-3 text-muted-foreground">Iterates ALL historical `email_analysis` records → Re-runs gatekeeper → Creates verified orders</td>
                                     </tr>
                                     <tr>
                                         <td className="px-4 py-3 font-mono text-xs">"generate pdf for order 14"</td>
@@ -229,11 +229,6 @@ export function DocsPage() {
                                         <td className="px-4 py-3 font-mono text-xs">"show high priority emails"</td>
                                         <td className="px-4 py-3"><span className="px-2 py-1 bg-gray-500/10 text-gray-600 rounded">unknown</span></td>
                                         <td className="px-4 py-3 text-muted-foreground">Orchestrator generates Client UI Action → Fires <code>redirect</code> to Emails tab + <code>filter: High</code></td>
-                                    </tr>
-                                    <tr>
-                                        <td className="px-4 py-3 font-mono text-xs">"42" / "forty two"</td>
-                                        <td className="px-4 py-3"><span className="px-2 py-1 bg-blue-500/10 text-blue-600 rounded">num2text</span> / <span className="px-2 py-1 bg-blue-500/10 text-blue-600 rounded">text2num</span></td>
-                                        <td className="px-4 py-3 text-muted-foreground">Trigger pure demonstration conversational agents for simple text/integer transformations.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -254,7 +249,7 @@ export function DocsPage() {
                                 <div>
                                     <h4 className="font-mono font-semibold text-blue-500">POST /procurement/{"{email_id}"}/compliance</h4>
                                     <p className="text-sm text-foreground/90 mt-1">
-                                        Runs the gatekeeper rules against an already extracted email record. Updates the `compliance_status` flag to either `Passed` or `Failed` and saves a plain-english explanation.
+                                        Runs the gatekeeper rules against an already extracted email record. Records a simple pass/fail flag and saves a plain-english explanation.
                                     </p>
                                 </div>
                             </Card>
@@ -262,7 +257,7 @@ export function DocsPage() {
                                 <div>
                                     <h4 className="font-mono font-semibold text-green-500">POST /procurement/{"{email_id}"}/order</h4>
                                     <p className="text-sm text-foreground/90 mt-1">
-                                        Initiates actual purchase order creation. Only executes if the row's `compliance_status` is `Passed`. Drops a record in the `orders` table and triggers local PDF file generation.
+                                        Initiates actual purchase order creation. Only executes if the request meets all compliance thresholds. Drops a record in the `orders` table and triggers local PDF file generation.
                                     </p>
                                 </div>
                             </Card>
@@ -350,7 +345,7 @@ export function DocsPage() {
                                     Holds structured data extracted by the Email Agent.
                                 </p>
                                 <p className="text-xs font-mono text-muted-foreground bg-black/5 dark:bg-white/5 p-1 rounded overflow-x-auto whitespace-nowrap">
-                                    id, email_id, priority, summary, item_id, item_name, item_quantity, item_unit_price, vendor_id, vendor_name, vendor_email, vendor_phone, total_cost, compliance_status, compliance_explanation, order_id
+                                    id, email_id, priority, summary, item_id, item_name, item_quantity, item_unit_price, vendor_id, vendor_name, vendor_email, vendor_phone, total_cost, compliance_explanation, order_id
                                 </p>
                             </Card>
 
@@ -422,7 +417,7 @@ export function DocsPage() {
                                     Historical ledger of generated purchase orders and their PDF paths.
                                 </p>
                                 <p className="text-xs font-mono text-muted-foreground bg-black/5 dark:bg-white/5 p-1 rounded overflow-x-auto whitespace-nowrap">
-                                    id, item_id, qty, vendor_id, amount, status, pdf_path, created_at
+                                    id, item_id, qty, vendor_id, amount, pdf_path, created_at
                                 </p>
                             </Card>
                         </div>

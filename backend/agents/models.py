@@ -16,7 +16,7 @@ class UIAction(BaseModel):
 
 
 class OrchestrationResponse(BaseModel):
-    decision: Literal["num2text", "text2num", "email", "unknown"] = Field(
+    decision: Literal["email", "compliance", "pdf", "unknown"] = Field(
         description="The routing decision for the orchestrator."
     )
     ui_actions: List[UIAction] = Field(

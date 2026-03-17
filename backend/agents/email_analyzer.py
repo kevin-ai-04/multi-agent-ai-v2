@@ -5,7 +5,7 @@ import json
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from backend.agents.config import email_analyzer_llm
+from backend.agents.config import get_email_analyzer_llm
 from backend.agents.models import EmailExtraction
 
 
@@ -26,7 +26,7 @@ Determine the Priority based strictly on the number of days:
 Respond ONLY with a valid JSON object matching the requested schema.
 """
     try:
-        response = email_analyzer_llm.invoke([
+        response = get_email_analyzer_llm().invoke([
             SystemMessage(content=system_prompt + "\nSchema: {\"item_name\": \"str\", \"quantity\": int, \"days_available\": int, \"priority\": \"str\", \"summary\": \"str\"}\nReturn strictly raw JSON."),
             HumanMessage(content=body)
         ])

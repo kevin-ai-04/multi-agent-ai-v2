@@ -51,7 +51,6 @@ CREATE TABLE IF NOT EXISTS orders(
   qty INTEGER,
   vendor_id INTEGER,
   amount REAL,
-  status TEXT DEFAULT 'DRAFT',
   pdf_path TEXT,
   created_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY(item_id) REFERENCES items(id),
@@ -82,7 +81,6 @@ CREATE TABLE IF NOT EXISTS email_analysis (
     vendor_email TEXT,
     vendor_phone TEXT,
     total_cost REAL,
-    compliance_status TEXT DEFAULT 'Pending',
     compliance_explanation TEXT,
     order_id INTEGER,
     FOREIGN KEY(email_id) REFERENCES emails(id),
@@ -269,6 +267,31 @@ conn.execute("UPDATE policies SET value = '100000' WHERE key = 'max_single_order
 
 
 
+
+# ---------------- Mock Orders ----------------
+import csv
+CSV_PATH = Path(__file__).resolve().parents[1] / "refrence-forecast" / "mock_orders.csv"
+
+if CSV_PATH.exists():
+    print(f"Loading mock orders from {CSV_PATH}...")
+    with open(CSV_PATH, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            # order_id,order_date,item_id,vendor_id,quantity,unit_price,total_price
+            conn.execute("""
+                INSERT OR IGNORE INTO orders (id, created_at, item_id, vendor_id, qty, amount)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                row['order_id'],
+                row['order_date'],
+                row['item_id'],
+                row['vendor_id'],
+                row['quantity'],
+                row['total_price']
+            ))
+    print("Mock orders loaded.")
+else:
+    print(f"Warning: Mock orders file not found at {CSV_PATH}")
 
 conn.commit()
 conn.close()

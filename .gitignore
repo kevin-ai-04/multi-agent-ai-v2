@@ -9,3 +9,5 @@ backend/data/procurement.db
 /reference
 emails.db
 orders/
+/temp
+*.db

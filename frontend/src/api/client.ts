@@ -1,9 +1,11 @@
 const API_BASE_URL = "http://localhost:8000";
 
 interface ChatRequest {
-    input_text: string;
-    agent_a_enabled: boolean;
-    agent_b_enabled: boolean;
+    message: string;
+    agent_email_enabled: boolean;
+    agent_compliance_enabled: boolean;
+    agent_pdf_enabled: boolean;
+    agent_forecast_enabled: boolean;
 }
 
 interface ChatResponse {
@@ -207,11 +209,9 @@ export interface PaginatedOrdersResponse {
 export async function fetchOrdersPaginated(
     page: number = 1,
     perPage: number = 20,
-    status?: string,
     search?: string,
 ): Promise<PaginatedOrdersResponse> {
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
-    if (status) params.set("status", status);
     if (search) params.set("search", search);
 
     const response = await fetch(`${API_BASE_URL}/orders/list?${params}`);
@@ -224,8 +224,6 @@ export async function fetchOrdersPaginated(
 export interface OrdersSummary {
     total_count: number;
     total_volume: number;
-    draft_count: number;
-    approved_count: number;
 }
 
 export async function fetchOrdersSummary(): Promise<OrdersSummary> {

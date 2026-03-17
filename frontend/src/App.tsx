@@ -21,8 +21,10 @@ import { Button } from "@/components/ui/button"
 
 function App() {
     // Agent Configuration State
-    const [agentAEnabled, setAgentAEnabled] = useState(true)
-    const [agentBEnabled, setAgentBEnabled] = useState(true)
+    const [agentEmailEnabled, setAgentEmailEnabled] = useState(true)
+    const [agentComplianceEnabled, setAgentComplianceEnabled] = useState(true)
+    const [agentPdfEnabled, setAgentPdfEnabled] = useState(true)
+    const [agentForecastEnabled, setAgentForecastEnabled] = useState(true)
 
     // UI State
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -81,10 +83,14 @@ function App() {
     return (
         <div className="flex h-screen w-full overflow-hidden mesh-gradient text-foreground transition-colors duration-500">
             <Sidebar
-                agentAEnabled={agentAEnabled}
-                setAgentAEnabled={setAgentAEnabled}
-                agentBEnabled={agentBEnabled}
-                setAgentBEnabled={setAgentBEnabled}
+                agentEmailEnabled={agentEmailEnabled}
+                setAgentEmailEnabled={setAgentEmailEnabled}
+                agentComplianceEnabled={agentComplianceEnabled}
+                setAgentComplianceEnabled={setAgentComplianceEnabled}
+                agentPdfEnabled={agentPdfEnabled}
+                setAgentPdfEnabled={setAgentPdfEnabled}
+                agentForecastEnabled={agentForecastEnabled}
+                setAgentForecastEnabled={setAgentForecastEnabled}
                 activeView={activeView}
                 setActiveView={setActiveView}
                 isCollapsed={isSidebarCollapsed}
@@ -141,8 +147,10 @@ function App() {
                         {/* Home View (Chat Full Screen) */}
                         {activeView === 'home' && (
                             <ChatInterface
-                                agentAEnabled={agentAEnabled}
-                                agentBEnabled={agentBEnabled}
+                                agentEmailEnabled={agentEmailEnabled}
+                                agentComplianceEnabled={agentComplianceEnabled}
+                                agentPdfEnabled={agentPdfEnabled}
+                                agentForecastEnabled={agentForecastEnabled}
                                 messages={messages}
                                 setMessages={setMessages}
                                 input={input}
@@ -201,8 +209,10 @@ function App() {
                             </div>
                             <div className="flex-1 overflow-hidden">
                                 <ChatInterface
-                                    agentAEnabled={agentAEnabled}
-                                    agentBEnabled={agentBEnabled}
+                                    agentEmailEnabled={agentEmailEnabled}
+                                    agentComplianceEnabled={agentComplianceEnabled}
+                                    agentPdfEnabled={agentPdfEnabled}
+                                    agentForecastEnabled={agentForecastEnabled}
                                     messages={messages}
                                     setMessages={setMessages}
                                     input={input}

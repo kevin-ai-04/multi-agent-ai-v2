@@ -8,6 +8,19 @@ def main():
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
     frontend_dir = os.path.join(base_dir, "frontend")
+    db_path = os.path.join(base_dir, "backend", "data", "procurement.db")
+    db_init_script = os.path.join(base_dir, "scripts", "db_init.py")
+
+    # Check if database exists, if not, run db_init
+    if not os.path.exists(db_path):
+        print(f"📦 Database not found at {db_path}. Initializing...")
+        try:
+            # Run db_init using the same python interpreter
+            subprocess.run([sys.executable, db_init_script], check=True)
+            print("✅ Database initialized successfully.")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Failed to initialize database: {e}")
+            return
     
     # Commands
     # We use sys.executable to ensure we use the same python interpreter (virtualenv aware)
