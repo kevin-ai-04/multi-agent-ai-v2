@@ -37,7 +37,12 @@ def orchestrator_node(state: AgentState):
     chat_response = orchestration.chat_response
     
     steps = list(state.get("steps", []))
-    steps.append(f"Orchestrator: Analyzed input. Routing to {decision}.")
+    
+    display_decision = decision
+    if decision == "unknown" and (ui_actions or chat_response):
+        display_decision = "inline UI / direct response"
+        
+    steps.append(f"Orchestrator: Analyzed input. Routing to {display_decision}.")
     
     return {
         "routing_decision": decision, 
