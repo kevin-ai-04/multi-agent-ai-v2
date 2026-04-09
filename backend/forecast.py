@@ -146,12 +146,20 @@ def generate_forecast_report():
         markdown_content = response['message']['content'].strip()
         
         # Clean up any potential markdown code block wrappers
-        if markdown_content.startswith("```markdown"):
-            markdown_content = markdown_content[11:].strip()
-        if markdown_content.startswith("```"):
+        if markdown_content.startswith("```json"):
+            markdown_content = markdown_content[7:].strip()
+        elif markdown_content.startswith("```"):
             markdown_content = markdown_content[3:].strip()
         if markdown_content.endswith("```"):
             markdown_content = markdown_content[:-3].strip()
+            
+        try:
+            import json as local_json
+            parsed = local_json.loads(markdown_content)
+            parsed["model_used"] = model_name
+            markdown_content = local_json.dumps(parsed)
+        except Exception:
+            pass
             
         return {
             "stats_json": stats_json,

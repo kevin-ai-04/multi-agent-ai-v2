@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { Loader2, TrendingUp, Presentation, AlertCircle } from 'lucide-react';
+import { Loader2, TrendingUp, Presentation, AlertCircle, Bot } from 'lucide-react';
 import { generateForecast, fetchLatestForecast, fetchForecastHistory, fetchForecastById } from '../api/client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
@@ -176,6 +176,16 @@ export const ForecastPage: React.FC<ForecastPageProps> = ({
                                     )
                                 })}
                             </div>
+                        </div>
+                    )}
+                    
+                    {/* Subtle LLM Model Label */}
+                    {parsed.model_used && (
+                        <div className="flex justify-end mt-4">
+                            <span className="px-4 py-1.5 rounded-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[0.65rem] font-black tracking-widest text-slate-500 uppercase flex items-center gap-2 shadow-sm">
+                                <Bot className="w-3.5 h-3.5 text-purple-500" />
+                                Synchronized via {parsed.model_used}
+                            </span>
                         </div>
                     )}
                 </div>

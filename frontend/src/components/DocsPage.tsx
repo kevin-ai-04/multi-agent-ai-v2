@@ -1,6 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Bot, Network, Mail, Database, Terminal } from "lucide-react";
+import { Bot, Network, Mail, Database, Terminal, TrendingUp } from "lucide-react";
 
 export function DocsPage() {
     return (
@@ -121,15 +121,16 @@ export function DocsPage() {
 
                         <Card className="p-6 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm md:col-span-2">
                             <h4 className="font-bold text-xl mb-3 flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.8)]"></span> Forecast Agent (WIP)
+                                <span className="w-3 h-3 rounded-full bg-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.8)]"></span> Predictive Forecast Agent
                             </h4>
                             <p className="text-foreground/90 leading-relaxed mb-4">
-                                A proactive analytical agent that works strictly in the background to prevent supply chain bottlenecks.
+                                A hybrid analytical engine combining statistical time-series forecasting (Meta Prophet) with an intelligent LLM synthesis layer to proactively visualize and narrate supply chain bottlenecks before they happen.
                             </p>
                             <ul className="list-disc pl-5 space-y-2 text-muted-foreground text-sm">
-                                <li><strong>Inventory Monitoring:</strong> Continuously polls the `inventory` table against the `min_qty` limits.</li>
-                                <li><strong>Predictive Analytics:</strong> Uses historical order velocity to predict when an item will stock out based on current `qty_on_hand`.</li>
-                                <li><strong>Autonomous Drafting:</strong> When a stock-out is predicted, it autonomously prepares a "Restock Draft" email and queues it for the Orchestrator to notify the user.</li>
+                                <li><strong>Statistical Engine:</strong> Executes Facebook Prophet against 5000+ historical records from the database, identifying deep seasonality and component volume spikes.</li>
+                                <li><strong>Dynamic JSON UI Architecture:</strong> The LLM is strictly constrained via `format="json"` to output structured insights (Executive Summary, Macro Trends, Anomalies). The frontend bypasses unpredictable Markdown to directly map this JSON into highly stylized native React Bento Cards.</li>
+                                <li><strong>Interactive Visualizations:</strong> Outputs raw time-series data seamlessly into an interactive `Recharts` graphical dashboard with real-time legend isolation and filtering.</li>
+                                <li><strong>State Persistence:</strong> All analysis runs are snapped into the `forecasts` SQLite ledger, allowing instantaneous hot-loading of prior executive reports via the History dropdown.</li>
                             </ul>
                         </Card>
                     </section>
@@ -172,6 +173,17 @@ export function DocsPage() {
                                     <h4 className="font-semibold">Neural Dashboard</h4>
                                     <p className="text-sm text-muted-foreground mt-1">
                                         Visualizes the internal "thought process" of the agents. Watch as the Orchestrator delegates tasks and agents execute their specific logic in real-time.
+                                    </p>
+                                </div>
+                            </Card>
+                            <Card className="p-5 flex gap-4 items-start bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10">
+                                <div className="p-2 rounded-lg bg-teal-500/10 text-teal-500">
+                                    <TrendingUp className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold">Interactive Analytics</h4>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Data is transformed instantly into responsive charting dashboards. A hybrid model layers deep-learning AI narratives over hard statistical math to provide the ultimate executive dashboard overlay.
                                     </p>
                                 </div>
                             </Card>
@@ -418,6 +430,18 @@ export function DocsPage() {
                                 </p>
                                 <p className="text-xs font-mono text-muted-foreground bg-black/5 dark:bg-white/5 p-1 rounded overflow-x-auto whitespace-nowrap">
                                     id, item_id, qty, vendor_id, amount, pdf_path, created_at
+                                </p>
+                            </Card>
+
+                            <Card className="p-4 bg-white/40 dark:bg-black/40 border-white/20 dark:border-white/10 backdrop-blur-sm">
+                                <h4 className="font-bold flex items-center gap-2 mb-1">
+                                    <span className="w-2 h-2 rounded-sm bg-teal-500"></span> forecasts
+                                </h4>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                    Stored historical archive of JSON-mapped intelligence reports and time-series arrays.
+                                </p>
+                                <p className="text-xs font-mono text-muted-foreground bg-black/5 dark:bg-white/5 p-1 rounded overflow-x-auto whitespace-nowrap">
+                                    id, markdown, chart_data, created_at
                                 </p>
                             </Card>
                         </div>
