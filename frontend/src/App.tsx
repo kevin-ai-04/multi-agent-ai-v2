@@ -41,6 +41,12 @@ function App() {
     const [input, setInput] = useState("")
     const [isLoading, setIsLoading] = useState(false)
 
+    // Forecast State (Lifted for persistence)
+    const [isGeneratingForecast, setIsGeneratingForecast] = useState(false)
+    const [forecastReport, setForecastReport] = useState<string | null>(null)
+    const [forecastChartData, setForecastChartData] = useState<any[] | null>(null)
+    const [forecastError, setForecastError] = useState<string | null>(null)
+
     const folderMap: Record<string, string> = {
         inbox: "Inbox",
         sent: "Sent",
@@ -182,7 +188,18 @@ function App() {
                         {activeView === 'orders' && <OrdersPage />}
 
                         {/* Forecast View */}
-                        {activeView === 'forecast' && <ForecastPage />}
+                        {activeView === 'forecast' && (
+                            <ForecastPage 
+                                isGenerating={isGeneratingForecast}
+                                setIsGenerating={setIsGeneratingForecast}
+                                report={forecastReport}
+                                setReport={setForecastReport}
+                                chartData={forecastChartData}
+                                setChartData={setForecastChartData}
+                                error={forecastError}
+                                setError={setForecastError}
+                            />
+                        )}
 
                         {/* Docs View */}
                         {activeView === 'docs' && <DocsPage />}

@@ -183,15 +183,60 @@ async def api_get_orders():
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- Forecast API ---
+@app.get("/forecast/latest")
+async def api_get_latest_forecast():
+    try:
+        from backend.database import get_latest_forecast
+        forecast = get_latest_forecast()
+        if forecast:
+            return {"status": "success", "data": forecast}
+        return {"status": "not_found", "message": "No forecast found."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/forecast/history")
+async def api_get_forecast_history():
+    try:
+        from backend.database import get_forecast_history
+        history = get_forecast_history()
+        return {"status": "success", "data": history}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/forecast/{forecast_id}")
+async def api_get_forecast_by_id(forecast_id: int):
+    try:
+        from backend.database import get_forecast_by_id
+        forecast = get_forecast_by_id(forecast_id)
+        if forecast:
+            return {"status": "success", "data": forecast}
+        return {"status": "not_found", "message": "Forecast not found."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/forecast/generate")
 async def api_generate_forecast():
     """ Runs historical math analysis and LLM summarization. """
     try:
         from backend.forecast import generate_forecast_report
+        from backend.database import save_forecast
+        import json
+        
         result = generate_forecast_report()
-        if "error" in result and result["error"] is True:
+        if "error" in result and result.get("error") is True:
             # We still return the markdown error message so the UI can render it gracefully
             return result
+            
+        # Extract chart data if it exists
+        chart_data_json = "{}"
+        if "chart_data" in result:
+            chart_data_json = json.dumps(result["chart_data"])
+            
+        save_forecast(
+            result.get("stats_json", "{}"),
+            result.get("markdown", ""),
+            chart_data_json
+        )
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -364,6 +409,69 @@ async def manual_order_create(payload: dict):
             "status": "success",
             "order_id": order_id,
             "pdf_path": f"/static/orders/{filename}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class ManualOrderRequest(BaseModel):
+    item_name: str
+    quantity: int = 1
+
+@app.post("/orders/manual")
+async def create_manual_order_endpoint(request: ManualOrderRequest):
+    from backend.database import get_item_by_name, get_vendor, create_order, get_order_by_id
+    from backend.agents import run_gatekeeper_checks, explain_compliance_result, generate_order_pdf
+    
+    item = get_item_by_name(request.item_name)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+        
+    total_cost = item['unit_price'] * request.quantity
+    vendor = get_vendor(item.get('default_vendor_id'))
+    
+    fake_analysis = {
+        "item_id": item['id'],
+        "item_name": item['name'],
+        "vendor_id": vendor['id'] if vendor else None,
+        "quantity": request.quantity,
+        "total_cost": total_cost,
+        "priority": "Normal",
+        "summary": "Manual order from chat"
+    }
+    
+    gate = run_gatekeeper_checks(fake_analysis)
+    explanation = explain_compliance_result(fake_analysis, gate)
+    
+    if not gate['passed']:
+        raise HTTPException(status_code=400, detail=f"Compliance failed: {explanation}")
+        
+    try:
+        order_id = create_order(
+            item_id=fake_analysis['item_id'],
+            vendor_id=fake_analysis['vendor_id'],
+            qty=fake_analysis['quantity'],
+            amount=fake_analysis['total_cost']
+        )
+        
+        order_data = get_order_by_id(order_id)
+        if order_data:
+            order_data['priority'] = "Normal"
+            
+        pdf_path = generate_order_pdf(order_data)
+        
+        from backend.database import get_db_connection
+        conn = get_db_connection()
+        conn.execute("UPDATE orders SET pdf_path = ? WHERE id = ?", (pdf_path, order_id))
+        conn.commit()
+        conn.close()
+        
+        import os
+        filename = os.path.basename(pdf_path)
+        return {
+            "status": "success",
+            "order_id": order_id,
+            "pdf_path": f"/static/orders/{filename}",
+            "explanation": explanation
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

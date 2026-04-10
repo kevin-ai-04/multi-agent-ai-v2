@@ -57,6 +57,23 @@ def analyze_seasonality():
                         findings[item] = f"Demand spikes in {peak_month}, increasing by {pct_increase:.0f}% compared to the monthly average."
                         
         # Prophet trend decomposition on aggregate daily store sales
+        chart_data = [] # Data array specifically for Recharts
+        top_items_data = monthly_sales[monthly_sales['name'].isin(top_items)]
+        
+        # We need a stable pivot for Recharts: rows are months, columns are item quantities
+        if not top_items_data.empty:
+            pivot = top_items_data.pivot_table(index='month_num', columns='name', values='qty', aggfunc='sum').fillna(0)
+            
+            # Month mapping
+            month_names = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 
+                           7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
+                           
+            for month_num in pivot.index:
+                row_dict = {"name": month_names.get(month_num, str(month_num))}
+                for col in pivot.columns:
+                    row_dict[col] = float(pivot.at[month_num, col])
+                chart_data.append(row_dict)
+                
         try:
             daily_sales = df.groupby(df['created_at'].dt.date)['qty'].sum().reset_index()
             daily_sales.columns = ['ds', 'y']
@@ -77,7 +94,7 @@ def analyze_seasonality():
         except Exception as e:
             pass # Silently drop if Prophet fails on small datasets
             
-        return findings
+        return {"findings": findings, "chart_data": chart_data}
 
     except Exception as e:
         return {"error": f"Failed to analyze data: {str(e)}"}
@@ -85,11 +102,14 @@ def analyze_seasonality():
 
 def generate_forecast_report():
     """ Generates math stats then asks Ollama to format as Markdown. """
-    stats_data = analyze_seasonality()
+    analysis_result = analyze_seasonality()
     
-    if "error" in stats_data:
-        return _generate_error_md("Data Analysis Error", stats_data["error"])
+    if "error" in analysis_result:
+        return _generate_error_md("Data Analysis Error", analysis_result["error"])
 
+    stats_data = analysis_result.get("findings", {})
+    chart_data = analysis_result.get("chart_data", [])
+    
     stats_json = json.dumps(stats_data, indent=2)
 
     # Use the centralized dynamic configuration for consistency across agents
@@ -99,38 +119,58 @@ def generate_forecast_report():
         client = ollama.Client() # Assumes default localhost:11434
         
         system_prompt = (
-            "You are an expert Supply Chain Analyst. Your task is to analyze the provided "
-            "seasonal trend data and generate a clear, highly readable Markdown report.\n"
-            "Requirements:\n"
-            "- Use proper Markdown formatting (headers like #, ##, bolding, lists, tables).\n"
-            "- The output MUST be ONLY valid Markdown. Do NOT wrap the output in html tags.\n"
-            "- Structure the report with a clear header, an executive summary, and a detailed breakdown of the trends.\n"
-            "- Do not calculate new statistics, simply present the findings beautifully."
+            "You are a highly analytical structural agent. Your task is to process the raw Prophet data into a structured JSON payload.\n"
+            "Return strictly a JSON object with the following exact schema:\n"
+            "{\n"
+            '  "executive_summary": "A comprehensive 2-3 sentence strategic executive overview string.",\n'
+            '  "overall_trend": {"direction": "upward/downward", "percentage": "number as string", "analysis": "Detailed commentary string"},\n'
+            '  "anomalies": [\n'
+            '    {"item": "string", "insight": "string explaining what this means", "recommended_action": "Actionable procurement step", "severity": "High/Medium/Low"}\n'
+            "  ]\n"
+            "}\n"
+            "Do not output markdown, NO code block wrappers, only the raw JSON."
         )
         
-        user_prompt = f"Please generate the Markdown report based on the following statistical data:\n\n{stats_json}"
+        user_prompt = f"Please map the following statistical data into the rigid JSON schema:\n\n{stats_json}"
         
         response = client.chat(
             model=model_name,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
-            ]
+            ],
+            options={"temperature": 0.1},
+            format="json"
         )
         
         markdown_content = response['message']['content'].strip()
         
+        # Clean up any potential markdown code block wrappers
+        if markdown_content.startswith("```json"):
+            markdown_content = markdown_content[7:].strip()
+        elif markdown_content.startswith("```"):
+            markdown_content = markdown_content[3:].strip()
+        if markdown_content.endswith("```"):
+            markdown_content = markdown_content[:-3].strip()
+            
+        try:
+            import json as local_json
+            parsed = local_json.loads(markdown_content)
+            parsed["model_used"] = model_name
+            markdown_content = local_json.dumps(parsed)
+        except Exception:
+            pass
+            
         return {
             "stats_json": stats_json,
-            "markdown": markdown_content
+            "markdown": markdown_content,
+            "chart_data": chart_data
         }
         
     except Exception as e:
-        return {
-           "stats_json": stats_json, 
-           "error": True,
-           "markdown": _generate_error_md("Ollama Agent Error", f"Could not connect to Ollama or process prompt. Details: {str(e)}")
-        }
+        err_dict = _generate_error_md("Ollama Agent Error", f"Could not connect to Ollama or process prompt. Details: {str(e)}")
+        err_dict["stats_json"] = stats_json
+        return err_dict
 
 def _generate_error_md(title, message):
     """Helper to generate a styled error block as a proper response dict."""

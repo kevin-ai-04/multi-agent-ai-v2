@@ -497,4 +497,40 @@ def get_order_by_id(order_id: int):
     conn.close()
     return dict(row) if row else None
 
+# --- Forecast Management ---
+
+def save_forecast(stats_json: str, markdown: str, chart_data: str):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO forecasts (stats_json, markdown, chart_data) VALUES (?, ?, ?)",
+        (stats_json, markdown, chart_data)
+    )
+    conn.commit()
+    conn.close()
+
+def get_latest_forecast():
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM forecasts ORDER BY id DESC LIMIT 1")
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def get_forecast_history():
+    conn = get_db_connection()
+    c = conn.cursor()
+    # Fetch all, but we don't need to load huge chart data, just id and date.
+    c.execute("SELECT id, created_at FROM forecasts ORDER BY id DESC")
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def get_forecast_by_id(forecast_id: int):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM forecasts WHERE id = ?", (forecast_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
 

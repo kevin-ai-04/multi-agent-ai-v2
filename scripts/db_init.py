@@ -87,6 +87,14 @@ CREATE TABLE IF NOT EXISTS email_analysis (
     FOREIGN KEY(order_id) REFERENCES orders(id)
 );
 
+CREATE TABLE IF NOT EXISTS forecasts(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    stats_json TEXT,
+    markdown TEXT,
+    chart_data TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 """
 
 conn = sqlite3.connect(str(DB_PATH))

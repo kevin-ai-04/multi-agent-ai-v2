@@ -177,6 +177,24 @@ export const generateForecast = async (): Promise<any> => {
     return res.json();
 };
 
+export const fetchLatestForecast = async (): Promise<any> => {
+    const res = await fetch(`${API_BASE_URL}/forecast/latest`);
+    if (!res.ok) throw new Error('Failed to fetch latest forecast');
+    return res.json();
+};
+
+export const fetchForecastHistory = async (): Promise<any> => {
+    const res = await fetch(`${API_BASE_URL}/forecast/history`);
+    if (!res.ok) throw new Error('Failed to fetch forecast history');
+    return res.json();
+};
+
+export const fetchForecastById = async (id: number): Promise<any> => {
+    const res = await fetch(`${API_BASE_URL}/forecast/${id}`);
+    if (!res.ok) throw new Error('Failed to fetch forecast by id');
+    return res.json();
+};
+
 export async function getEmailAnalysis(emailId: string): Promise<{ status: string, data?: any }> {
     const response = await fetch(`${API_BASE_URL}/emails/${emailId}/analysis`);
     if (!response.ok) {

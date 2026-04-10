@@ -327,7 +327,7 @@ export function NewOrderPage() {
                                     disabled={!selectedItem || isChecking}
                                 >
                                     {isChecking ? (
-                                        <><Loader2 className="w-5 h-5 animate-spin mr-3" /> Running Gatekeeper...</>
+                                        <><Loader2 className="w-5 h-5 animate-spin mr-3" /> Running Compliance...</>
                                     ) : (
                                         <><ShieldCheck className="w-5 h-5 mr-3" /> 1. Check Compliance</>
                                     )}
@@ -391,7 +391,7 @@ export function NewOrderPage() {
                                     <CheckCircle2 className="w-8 h-8 text-green-500 shrink-0 mt-0.5" />
                                     <div>
                                         <p className="text-lg font-bold text-green-500">
-                                            Gatekeeper Passed: PO #{orderResult.orderId}
+                                            Compliance Passed: PO #{orderResult.orderId}
                                         </p>
                                         <p className="text-sm opacity-90 mt-1">{complianceResult?.explanation}</p>
                                     </div>
